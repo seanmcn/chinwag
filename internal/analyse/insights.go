@@ -2,7 +2,7 @@ package analyse
 
 import "fmt"
 
-func buildInsights(per map[string]*UserStats, me, them string) []string {
+func buildInsights(per map[string]*UserStats, me, them string, s Stats) []string {
 	a, b := per[me], per[them]
 	var out []string
 	addCmp := func(left, right int, more, less, even string) {
@@ -40,7 +40,56 @@ func buildInsights(per map[string]*UserStats, me, them string) []string {
 	addCmp(a.ConvosClosed, b.ConvosClosed, "You close more conversations.", "Your contact closes more conversations.", "Conversation endings are evenly shared.")
 	addCmp(a.ConvosMissed, b.ConvosMissed, "Your missed conversations skew toward you.", "Your missed conversations skew toward your contact.", "Your missed conversations are evenly matched.")
 	addCmp(a.Reconnects, b.Reconnects, "You reconnect more often after long silences.", "You rarely reconnect after long silences.", "")
+
+	// Sentiment
+	addCmp(a.Positive, b.Positive, "You send more upbeat messages than your contact.", "Your contact sends more upbeat messages than you.", "")
+	if a.Negative+b.Negative > 20 {
+		addCmp(a.Negative, b.Negative, "You vent more often than your contact.", "Your contact vents more often than you.", "")
+	}
+
+	// Latency spread (p90 vs avg) — flag bursty repliers
+	if a.P90Response > 0 && a.AvgResponse > 0 && a.P90Response > 6*a.AvgResponse {
+		out = append(out, "Your reply times are bursty — usually fast, occasionally very slow.")
+	}
+	if b.P90Response > 0 && b.AvgResponse > 0 && b.P90Response > 6*b.AvgResponse {
+		out = append(out, "Your contact's reply times are bursty — usually fast, occasionally very slow.")
+	}
+
+	// Chronotype contrast
+	if a.Chronotype != "" && b.Chronotype != "" && a.Chronotype != b.Chronotype {
+		out = append(out, "You and your contact are on different rhythms — "+a.Chronotype+" vs "+b.Chronotype+".")
+	}
+
+	// Streaks
+	if s.LongestStreak >= 14 {
+		out = append(out, "Your longest unbroken daily streak ran for "+itoa(s.LongestStreak)+" days.")
+	}
+	if s.CurrentStreak >= 7 {
+		out = append(out, "You're currently on a "+itoa(s.CurrentStreak)+"-day streak.")
+	}
 	return out
+}
+
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var buf [20]byte
+	i := len(buf)
+	for n > 0 {
+		i--
+		buf[i] = byte('0' + n%10)
+		n /= 10
+	}
+	if neg {
+		i--
+		buf[i] = '-'
+	}
+	return string(buf[i:])
 }
 
 func computeRating(s Stats) (int, string) {

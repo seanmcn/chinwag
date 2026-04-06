@@ -1,6 +1,7 @@
 package analyse
 
 import (
+	"sort"
 	"time"
 
 	"github.com/seanmcn/whatsapp-analyse/internal/parser"
@@ -37,8 +38,10 @@ func segment(msgs []parser.Message, gap time.Duration, me, them string) []Conver
 
 func computeResponses(convos []Conversation, per map[string]*UserStats) {
 	type acc struct {
-		first []float64 // seconds
-		all   []float64
+		first    []float64 // seconds
+		all      []float64
+		hourSum  [24]float64
+		hourCnt  [24]int
 	}
 	accs := map[string]*acc{}
 	for u := range per {
@@ -58,6 +61,9 @@ func computeResponses(convos []Conversation, per map[string]*UserStats) {
 				continue
 			}
 			a.all = append(a.all, dt)
+			h := cur.Timestamp.Hour()
+			a.hourSum[h] += dt
+			a.hourCnt[h]++
 			if !seenFirst[cur.Author] {
 				a.first = append(a.first, dt)
 				seenFirst[cur.Author] = true
@@ -71,6 +77,21 @@ func computeResponses(convos []Conversation, per map[string]*UserStats) {
 				sum += v
 			}
 			per[u].AvgResponse = int64(sum / float64(len(a.all)))
+			sorted := append([]float64(nil), a.all...)
+			sort.Float64s(sorted)
+			per[u].MedianResp = int64(sorted[len(sorted)/2])
+			p90idx := (len(sorted) * 90) / 100
+			if p90idx >= len(sorted) {
+				p90idx = len(sorted) - 1
+			}
+			per[u].P90Response = int64(sorted[p90idx])
+			var byHour [24]int64
+			for h := 0; h < 24; h++ {
+				if a.hourCnt[h] > 0 {
+					byHour[h] = int64(a.hourSum[h] / float64(a.hourCnt[h]))
+				}
+			}
+			per[u].ReplyByHour = byHour
 		}
 		if len(a.first) > 0 {
 			var sum float64

@@ -38,6 +38,15 @@ type UserStats struct {
 	RapidFirstPct int   // % first replies < 5 min
 	AvgFirstResp  int64 // seconds
 	AvgResponse   int64 // seconds
+	MedianResp    int64 // seconds (p50)
+	P90Response   int64 // seconds (p90)
+	Positive      int   // sentiment-positive messages
+	Negative      int   // sentiment-negative messages
+	SentimentAvg  float64
+	PeakHour      int    // hour of day with most messages
+	Chronotype    string // "Early bird" / "Daytime" / "Night owl"
+	TopTerms      []string
+	ReplyByHour   [24]int64 // avg seconds, indexed by hour-of-day of the reply
 }
 
 type EmojiCount struct {
@@ -48,6 +57,18 @@ type EmojiCount struct {
 type GrowthPoint struct {
 	Month  string         `json:"month"`  // YYYY-MM
 	Counts map[string]int `json:"counts"`
+}
+
+type SentimentPoint struct {
+	Month string `json:"month"` // YYYY-MM
+	Pos   int    `json:"pos"`
+	Neg   int    `json:"neg"`
+	Net   int    `json:"net"`
+}
+
+type DomainCount struct {
+	Domain string `json:"domain"`
+	Count  int    `json:"count"`
 }
 
 type DayCount struct {
@@ -88,6 +109,11 @@ type Stats struct {
 	CharsTyped    int
 	TimeTyping    string
 	Direction     map[string]int // user / other (always 16% other for now derived)
+	LongestStreak     int            // consecutive days with at least one message
+	CurrentStreak     int
+	TopTerms          []string         // overall distinctive terms across the whole chat
+	SentimentTimeline []SentimentPoint // per-month sentiment net
+	TopDomains        []DomainCount    // most-shared link hosts
 }
 
 // Run computes all stats. participants[0] is "me", [1] is the other.
@@ -136,6 +162,8 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 	uniqueWords := map[string]map[string]struct{}{me: {}, them: {}}
 	dailyMap := map[string]int{}
 	growthMap := map[string]map[string]int{}
+	hourHist := map[string][24]int{me: {}, them: {}}
+	sentMap := map[string]*SentimentPoint{} // month -> running totals
 	var prevAuthor string
 	for _, m := range msgs {
 		us, ok := s.PerUser[m.Author]
@@ -163,6 +191,21 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 		if containsAny(lower, []string{"well done", "proud of you", "you got this", "amazing", "great job", "good luck", "you can do"}) {
 			us.Encouragement++
 		}
+		// Sentiment
+		mk := m.Timestamp.Format("2006-01")
+		sp := sentMap[mk]
+		if sp == nil {
+			sp = &SentimentPoint{Month: mk}
+			sentMap[mk] = sp
+		}
+		switch scoreSentiment(m.Body) {
+		case 1:
+			us.Positive++
+			sp.Pos++
+		case -1:
+			us.Negative++
+			sp.Neg++
+		}
 		// Emoji
 		for _, r := range m.Body {
 			if isEmoji(r) {
@@ -187,6 +230,10 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 		}
 		// Heatmap & daily
 		s.Heatmap[int(m.Timestamp.Weekday())][m.Timestamp.Hour()]++
+		if h, ok := hourHist[m.Author]; ok {
+			h[m.Timestamp.Hour()]++
+			hourHist[m.Author] = h
+		}
 		dailyMap[m.Timestamp.Format("2006-01-02")]++
 		monthKey := m.Timestamp.Format("2006-01")
 		if _, ok := growthMap[monthKey]; !ok {
@@ -219,6 +266,10 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 	sort.Strings(months)
 	for _, k := range months {
 		s.Timeline = append(s.Timeline, GrowthPoint{Month: k, Counts: growthMap[k]})
+		if sp := sentMap[k]; sp != nil {
+			sp.Net = sp.Pos - sp.Neg
+			s.SentimentTimeline = append(s.SentimentTimeline, *sp)
+		}
 	}
 	// Daily activity (last 500 days up to End)
 	end := s.Period.End
@@ -244,6 +295,58 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 	days := int(d.Hours()) / 24
 	hrs := int(d.Hours()) % 24
 	s.TimeTyping = fmt.Sprintf("%d days %d hours", days, hrs)
+
+	// Per-user peak hour & chronotype
+	for u, h := range hourHist {
+		peak, peakV := 0, -1
+		for hr, v := range h {
+			if v > peakV {
+				peakV, peak = v, hr
+			}
+		}
+		s.PerUser[u].PeakHour = peak
+		switch {
+		case peak < 10:
+			s.PerUser[u].Chronotype = "Early bird"
+		case peak >= 22 || peak < 4:
+			s.PerUser[u].Chronotype = "Night owl"
+		default:
+			s.PerUser[u].Chronotype = "Daytime"
+		}
+		// Sentiment average
+		if s.PerUser[u].Messages > 0 {
+			s.PerUser[u].SentimentAvg = float64(s.PerUser[u].Positive-s.PerUser[u].Negative) / float64(s.PerUser[u].Messages)
+		}
+	}
+
+	// Streaks (consecutive days with at least one message), based on full daily map
+	var dayKeys []string
+	for k := range dailyMap {
+		dayKeys = append(dayKeys, k)
+	}
+	sort.Strings(dayKeys)
+	longest, current := 0, 0
+	var prevDay time.Time
+	for i, k := range dayKeys {
+		d, _ := time.Parse("2006-01-02", k)
+		if i == 0 || d.Sub(prevDay) == 24*time.Hour {
+			current++
+		} else {
+			current = 1
+		}
+		if current > longest {
+			longest = current
+		}
+		prevDay = d
+	}
+	s.LongestStreak = longest
+	// Current streak: only counts if it runs up to (or including) the last day in the data
+	if len(dayKeys) > 0 {
+		last, _ := time.Parse("2006-01-02", dayKeys[len(dayKeys)-1])
+		if s.Period.End.Sub(last) <= 24*time.Hour {
+			s.CurrentStreak = current
+		}
+	}
 
 	// Conversations
 	convos := segment(msgs, gap, me, them)
@@ -336,7 +439,19 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 		s.BalancePct[them] = 100 - s.BalancePct[me]
 	}
 
-	s.Insights = buildInsights(s.PerUser, me, them)
+	// Top link domains
+	s.TopDomains = computeTopDomains(msgs)
+
+	// Topic / distinctive term extraction
+	perTerms, overallTerms := computeTopTerms(msgs, me, them)
+	s.TopTerms = overallTerms
+	for u, terms := range perTerms {
+		if us, ok := s.PerUser[u]; ok {
+			us.TopTerms = terms
+		}
+	}
+
+	s.Insights = buildInsights(s.PerUser, me, them, s)
 	s.Rating, s.RatingLabel = computeRating(s)
 	s.Direction = map[string]int{me: 47, them: 37, "Other people": 16} // placeholder split
 	return s
