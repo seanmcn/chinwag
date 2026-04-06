@@ -93,6 +93,60 @@
     });
   });
 
+  // ── Sentiment over time (line) ──────────────────────────
+  safe('sentiment', () => {
+    const el = document.getElementById('sentiment');
+    if (!el || !D.sentiment || !D.sentiment.length) return;
+    new Chart(el, {
+      type: 'line',
+      data: {
+        labels: D.sentiment.map(p => p.month),
+        datasets: [
+          { label: 'Net tone', data: D.sentiment.map(p => p.net), borderColor: '#f59e0b', backgroundColor: '#f59e0b22', tension: .35, pointRadius: 0, fill: true, borderWidth: 2 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#eef0ff', boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'rectRounded' } } },
+        scales: {
+          x: { ticks: { color: '#9aa0c4', maxTicksLimit: 14 }, grid: { color: '#ffffff08' } },
+          y: { ticks: { color: '#9aa0c4' }, grid: { color: '#ffffff08' } },
+        },
+      },
+    });
+  });
+
+  // ── Reply speed by hour (bar) ───────────────────────────
+  safe('replyhour', () => {
+    const el = document.getElementById('replyhour');
+    if (!el || !D.perUser) return;
+    const me_ = D.perUser[me], them_ = D.perUser[them];
+    if (!me_ || !them_) return;
+    const labels = Array.from({ length: 24 }, (_, h) => h);
+    const toMin = arr => (arr || []).map(s => s ? Math.round(s / 60) : null);
+    new Chart(el, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: me, data: toMin(me_.ReplyByHour), backgroundColor: colMe + 'cc', borderRadius: 3 },
+          { label: them, data: toMin(them_.ReplyByHour), backgroundColor: colThem + 'cc', borderRadius: 3 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#eef0ff', boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'rectRounded' } },
+          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} min` } },
+        },
+        scales: {
+          x: { ticks: { color: '#9aa0c4', callback: v => v + ':00' }, grid: { color: '#ffffff08' } },
+          y: { ticks: { color: '#9aa0c4', callback: v => v + 'm' }, grid: { color: '#ffffff08' }, beginAtZero: true },
+        },
+      },
+    });
+  });
+
   // ── Daily activity (GitHub-style grid) ──────────────────
   safe('daily', () => {
     const host = document.getElementById('daily-grid');

@@ -90,6 +90,8 @@
       <tr><td>Apologies</td><td><span class="chip {{cmpA $pme.Apologies $pthem.Apologies}}">{{comma $pme.Apologies}}</span></td><td><span class="chip {{cmpB $pme.Apologies $pthem.Apologies}}">{{comma $pthem.Apologies}}</span></td></tr>
       <tr><td>Questions</td><td><span class="chip {{cmpA $pme.Questions $pthem.Questions}}">{{comma $pme.Questions}}</span></td><td><span class="chip {{cmpB $pme.Questions $pthem.Questions}}">{{comma $pthem.Questions}}</span></td></tr>
       <tr><td>Encouragement</td><td><span class="chip {{cmpA $pme.Encouragement $pthem.Encouragement}}">{{comma $pme.Encouragement}}</span></td><td><span class="chip {{cmpB $pme.Encouragement $pthem.Encouragement}}">{{comma $pthem.Encouragement}}</span></td></tr>
+      <tr><td>Upbeat msgs</td><td><span class="chip {{cmpA $pme.Positive $pthem.Positive}}">{{comma $pme.Positive}}</span></td><td><span class="chip {{cmpB $pme.Positive $pthem.Positive}}">{{comma $pthem.Positive}}</span></td></tr>
+      <tr><td>Downbeat msgs</td><td><span class="chip {{cmpB $pme.Negative $pthem.Negative}}">{{comma $pme.Negative}}</span></td><td><span class="chip {{cmpA $pme.Negative $pthem.Negative}}">{{comma $pthem.Negative}}</span></td></tr>
     </table>
   </section>
 
@@ -153,6 +155,8 @@
       <tr><td>Rapid 1st Response</td><td><span class="chip {{cmpA $pme.RapidFirstPct $pthem.RapidFirstPct}}">{{$pme.RapidFirstPct}}%</span></td><td><span class="chip {{cmpB $pme.RapidFirstPct $pthem.RapidFirstPct}}">{{$pthem.RapidFirstPct}}%</span></td></tr>
       <tr><td>Avg 1st Response</td><td><span class="chip {{cmpAS $pme.AvgFirstResp $pthem.AvgFirstResp}}">{{fmtSec $pme.AvgFirstResp}}</span></td><td><span class="chip {{cmpBS $pme.AvgFirstResp $pthem.AvgFirstResp}}">{{fmtSec $pthem.AvgFirstResp}}</span></td></tr>
       <tr><td>Avg Response Time</td><td><span class="chip {{cmpAS $pme.AvgResponse $pthem.AvgResponse}}">{{fmtSec $pme.AvgResponse}}</span></td><td><span class="chip {{cmpBS $pme.AvgResponse $pthem.AvgResponse}}">{{fmtSec $pthem.AvgResponse}}</span></td></tr>
+      <tr><td>Median (p50)</td><td><span class="chip {{cmpAS $pme.MedianResp $pthem.MedianResp}}">{{fmtSec $pme.MedianResp}}</span></td><td><span class="chip {{cmpBS $pme.MedianResp $pthem.MedianResp}}">{{fmtSec $pthem.MedianResp}}</span></td></tr>
+      <tr><td>Slow tail (p90)</td><td><span class="chip {{cmpAS $pme.P90Response $pthem.P90Response}}">{{fmtSec $pme.P90Response}}</span></td><td><span class="chip {{cmpBS $pme.P90Response $pthem.P90Response}}">{{fmtSec $pthem.P90Response}}</span></td></tr>
     </table>
   </section>
 
@@ -169,6 +173,69 @@
       <tr><td>Double Messages</td><td><span class="chip">{{comma $pme.DoubleMsgs}}</span></td><td><span class="chip">{{comma $pthem.DoubleMsgs}}</span></td></tr>
       <tr><td>Convos Missed</td><td><span class="chip">{{comma $pme.ConvosMissed}}</span></td><td><span class="chip">{{comma $pthem.ConvosMissed}}</span></td></tr>
     </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">🌗</span> Rhythms &amp; Streaks</h2>
+    <p class="sub">When each of you is most active, and the longest unbroken run of daily chat.</p>
+    <div class="streaks">
+      <div class="streak">
+        <div class="streak-num">{{.S.LongestStreak}}</div>
+        <div class="streak-lbl">Longest streak (days)</div>
+      </div>
+      <div class="streak">
+        <div class="streak-num">{{.S.CurrentStreak}}</div>
+        <div class="streak-lbl">Current streak (days)</div>
+      </div>
+    </div>
+    <table class="kv">
+      <tr class="kv-head"><th></th><th><span class="av av-me sm">{{initial $me}}</span> {{$me}}</th><th><span class="av av-them sm">{{initial $them}}</span> {{$them}}</th></tr>
+      <tr><td>Peak hour</td><td><span class="chip">{{fmtHour $pme.PeakHour}}</span></td><td><span class="chip">{{fmtHour $pthem.PeakHour}}</span></td></tr>
+      <tr><td>Chronotype</td><td><span class="chip">{{$pme.Chronotype}}</span></td><td><span class="chip">{{$pthem.Chronotype}}</span></td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">💗</span> Sentiment Over Time</h2>
+    <p class="sub">Net upbeat-vs-downbeat tone, bucketed by month.</p>
+    <div class="chart-box"><canvas id="sentiment"></canvas></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">⏱️</span> Reply Speed by Hour</h2>
+    <p class="sub">Average reply time depending on the hour-of-day the reply was sent.</p>
+    <div class="chart-box"><canvas id="replyhour"></canvas></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">🔗</span> Top Link Domains</h2>
+    <p class="sub">Which sites you share most often.</p>
+    <div class="tag-row">
+      {{range .S.TopDomains}}<span class="tag">{{.Domain}} <b>{{.Count}}</b></span>{{else}}<span class="tag-empty">No links shared</span>{{end}}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">🏷️</span> Topics &amp; Vocabulary</h2>
+    <p class="sub">The words each of you uses far more than the other — and what you both talk about most.</p>
+    <div class="topic-block">
+      <div class="topic-head">DISTINCTIVE TO {{$me}}</div>
+      <div class="tag-row">
+        {{range $pme.TopTerms}}<span class="tag tag-me">{{.}}</span>{{else}}<span class="tag-empty">Not enough data</span>{{end}}
+      </div>
+    </div>
+    <div class="topic-block">
+      <div class="topic-head">DISTINCTIVE TO {{$them}}</div>
+      <div class="tag-row">
+        {{range $pthem.TopTerms}}<span class="tag tag-them">{{.}}</span>{{else}}<span class="tag-empty">Not enough data</span>{{end}}
+      </div>
+    </div>
+    <div class="topic-block">
+      <div class="topic-head">SHARED VOCABULARY</div>
+      <div class="tag-row">
+        {{range .S.TopTerms}}<span class="tag">{{.}}</span>{{else}}<span class="tag-empty">Not enough data</span>{{end}}
+      </div>
+    </div>
   </section>
 
 </div>

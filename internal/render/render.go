@@ -45,6 +45,7 @@ func HTML(s analyse.Stats) ([]byte, error) {
 			return fmt.Sprintf("%02d:%02d", int(d.Minutes()), int(d.Seconds())%60)
 		},
 		"comma":   commaInt,
+		"fmtHour": func(h int) string { return fmt.Sprintf("%02d:00", h) },
 		"commaF":  func(f float64) string { return commaInt(int(f + 0.5)) },
 		"initial": func(s string) string {
 			for _, r := range s {
@@ -70,12 +71,18 @@ func HTML(s analyse.Stats) ([]byte, error) {
 	}
 
 	jsonBlob, err := json.Marshal(map[string]any{
-		"me":       s.Participants[0],
-		"them":     s.Participants[1],
-		"timeline": s.Timeline,
-		"heatmap":  s.Heatmap,
-		"sankey":   s.Convos.Sankey,
-		"daily":    s.DailyActivity,
+		"me":            s.Participants[0],
+		"them":          s.Participants[1],
+		"timeline":      s.Timeline,
+		"heatmap":       s.Heatmap,
+		"sankey":        s.Convos.Sankey,
+		"daily":         s.DailyActivity,
+		"perUser":       s.PerUser,
+		"topTerms":      s.TopTerms,
+		"longestStreak": s.LongestStreak,
+		"currentStreak": s.CurrentStreak,
+		"sentiment":     s.SentimentTimeline,
+		"domains":       s.TopDomains,
 	})
 	if err != nil {
 		return nil, err
