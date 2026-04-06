@@ -105,6 +105,38 @@ body{
 .chip.win{background:#4ade8018;border-color:#4ade8045;color:#86efac}
 .chip.lose{background:#f8717118;border-color:#f8717145;color:#fca5a5}
 
+/* ── Rating ring ─────────────────────────────────────── */
+.rating-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0 4px}
+.ring{display:block}
+.rating-label{font-size:13px;color:var(--ink);font-weight:600}
+
+/* ── Balance ─────────────────────────────────────────── */
+.balance-pts{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink);margin-bottom:6px}
+.bar{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:4px 0 12px}
+.bar .left{background:var(--me);text-align:center;color:#0b1224;font-size:11px;font-weight:700;line-height:22px}
+.bar .right{background:var(--them);text-align:center;color:#0b1224;font-size:11px;font-weight:700;line-height:22px}
+.balance-foot{display:flex;align-items:center;justify-content:center;gap:10px;font-size:11.5px;color:var(--muted)}
+.balance-tag{padding:5px 10px;border-radius:6px;background:#ffffff08;border:1px solid var(--chip-bd)}
+
+/* ── Streaks ─────────────────────────────────────────── */
+.streaks{display:flex;gap:10px;margin:2px 0 14px}
+.streak{flex:1;background:linear-gradient(180deg,#ffffff0c,#ffffff03);border:1px solid var(--chip-bd);border-radius:10px;padding:12px 14px}
+.streak-num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ink);line-height:1}
+.streak-lbl{font-size:10.5px;color:var(--muted);margin-top:4px;letter-spacing:.3px}
+
+/* ── Top emojis row ──────────────────────────────────── */
+.emoji-block{margin-bottom:14px}
+.emoji-head{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
+.emoji-row{display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap}
+.emoji-row .who{color:var(--muted);font-size:11px;min-width:60px}
+.emj{font-size:13px;display:inline-flex;align-items:center;gap:4px}
+.emj b{color:var(--muted);font-weight:600;font-size:11px;font-family:'JetBrains Mono',monospace}
+
+/* ── Heatmap caption ─────────────────────────────────── */
+.times-foot{font-size:11.5px;color:var(--muted);margin-top:6px}
+.times-foot.tiny{font-size:11px;opacity:.85}
+.times-foot b{color:var(--ink);font-weight:600}
+
 /* ── Insights ────────────────────────────────────────── */
 .insights{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .insights li{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;font-size:12.5px;background:linear-gradient(180deg,#ffffff0c,#ffffff03);border:1px solid var(--chip-bd)}

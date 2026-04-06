@@ -3,17 +3,15 @@ import './App.css';
 import { OpenFileDialog, DistinctAuthors, Analyse } from '../wailsjs/go/main/App';
 import type { main } from '../wailsjs/go/models';
 type Stats = main.StatsDTO;
-import { Topbar, Overview, Activity, Conversations, Sentiment, Topics, Insights } from './sections';
+import { Topbar, Overview, Messages, Activity, Conversations } from './sections';
 
-type Tab = 'overview' | 'activity' | 'conversations' | 'sentiment' | 'topics' | 'insights';
+type Tab = 'overview' | 'messages' | 'activity' | 'conversations';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
+  { id: 'messages', label: 'Messages' },
   { id: 'activity', label: 'Activity' },
   { id: 'conversations', label: 'Conversations' },
-  { id: 'sentiment', label: 'Sentiment' },
-  { id: 'topics', label: 'Topics' },
-  { id: 'insights', label: 'Insights' },
 ];
 
 function App() {
@@ -100,11 +98,9 @@ function App() {
       <main className="main">
         <Topbar stats={stats} />
         {tab === 'overview' && <Overview stats={stats} />}
+        {tab === 'messages' && <Messages stats={stats} />}
         {tab === 'activity' && <Activity stats={stats} />}
         {tab === 'conversations' && <Conversations stats={stats} />}
-        {tab === 'sentiment' && <Sentiment stats={stats} />}
-        {tab === 'topics' && <Topics stats={stats} />}
-        {tab === 'insights' && <Insights stats={stats} />}
       </main>
     </div>
   );
