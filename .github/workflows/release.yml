@@ -1,0 +1,144 @@
+name: Release
+
+# Triggered by pushing a v* tag (e.g. v0.3.0). Builds the Wails desktop
+# app for macOS (universal) and Windows (amd64) plus the standalone CLI
+# for Linux/macOS/Windows, then uploads everything to the GitHub release.
+#
+# Code signing is wired in but optional: each step is a no-op unless the
+# corresponding secret is set, so the workflow runs unchanged once certs
+# are added later.
+#
+# macOS secrets (all optional, all required to actually sign+notarize):
+#   APPLE_CERT              base64 .p12 developer ID application cert
+#   APPLE_CERT_PASSWORD     password for the .p12
+#   APPLE_TEAM_ID           Apple Developer team id
+#   APPLE_NOTARIZE_USER     Apple ID for notarytool
+#   APPLE_NOTARIZE_PASS     app-specific password for notarytool
+#
+# Windows secrets (all optional):
+#   WINDOWS_CERT            base64 .pfx code-signing cert
+#   WINDOWS_CERT_PASSWORD   password for the .pfx
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: darwin/universal
+            artifact: WhatsApp-Analyse-macOS.zip
+          - os: windows-latest
+            platform: windows/amd64
+            artifact: WhatsApp-Analyse-Windows.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/frontend/package-lock.json
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+      - name: Install frontend deps
+        working-directory: app/frontend
+        run: npm ci
+      - name: Build app
+        working-directory: app
+        run: wails build -platform ${{ matrix.platform }} -clean
+
+      # ── macOS sign + notarize (no-op without secrets) ──
+      - name: macOS codesign + notarize
+        if: runner.os == 'macOS' && env.APPLE_CERT != ''
+        env:
+          APPLE_CERT: ${{ secrets.APPLE_CERT }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_NOTARIZE_USER: ${{ secrets.APPLE_NOTARIZE_USER }}
+          APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
+        run: |
+          echo "$APPLE_CERT" | base64 -d > /tmp/cert.p12
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import /tmp/cert.p12 -k build.keychain -P "$APPLE_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
+          codesign --deep --force --verbose --options runtime --timestamp \
+            --sign "Developer ID Application: $APPLE_TEAM_ID" \
+            "app/build/bin/whatsapp-analyse-app.app"
+          ditto -c -k --keepParent "app/build/bin/whatsapp-analyse-app.app" /tmp/notarize.zip
+          xcrun notarytool submit /tmp/notarize.zip \
+            --apple-id "$APPLE_NOTARIZE_USER" \
+            --password "$APPLE_NOTARIZE_PASS" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple "app/build/bin/whatsapp-analyse-app.app"
+
+      # ── Windows signtool (no-op without secrets) ──
+      - name: Windows signtool
+        if: runner.os == 'Windows' && env.WINDOWS_CERT != ''
+        env:
+          WINDOWS_CERT: ${{ secrets.WINDOWS_CERT }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\cert.pfx", [Convert]::FromBase64String($env:WINDOWS_CERT))
+          & "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign `
+            /f "$env:RUNNER_TEMP\cert.pfx" /p "$env:WINDOWS_CERT_PASSWORD" `
+            /tr http://timestamp.digicert.com /td sha256 /fd sha256 `
+            "app\build\bin\whatsapp-analyse-app.exe"
+
+      - name: Package macOS
+        if: runner.os == 'macOS'
+        run: |
+          cd app/build/bin
+          ditto -c -k --keepParent whatsapp-analyse-app.app ../../../${{ matrix.artifact }}
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path app\build\bin\whatsapp-analyse-app.exe -DestinationPath ${{ matrix.artifact }}
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
+
+  cli:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            ext: ''
+          - os: macos-latest
+            goos: darwin
+            ext: ''
+          - os: windows-latest
+            goos: windows
+            ext: '.exe'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - name: Build CLI
+        env:
+          GOWORK: 'off'
+        run: go build -o whatsapp-analyse-${{ matrix.goos }}${{ matrix.ext }} ./cmd/whatsapp-analyse
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: whatsapp-analyse-${{ matrix.goos }}${{ matrix.ext }}
