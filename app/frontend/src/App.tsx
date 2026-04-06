@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import './App.css';
 import { OpenFileDialog, DistinctAuthors, Analyse } from '../wailsjs/go/main/App';
-import type { analyse } from '../wailsjs/go/models';
+import type { main } from '../wailsjs/go/models';
+type Stats = main.StatsDTO;
 import { Topbar, Overview, Activity, Conversations, Sentiment, Topics, Insights } from './sections';
 
 type Tab = 'overview' | 'activity' | 'conversations' | 'sentiment' | 'topics' | 'insights';
@@ -20,7 +21,7 @@ function App() {
   const [authors, setAuthors] = useState<string[]>([]);
   const [me, setMe] = useState('');
   const [them, setThem] = useState('');
-  const [stats, setStats] = useState<analyse.Stats | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('overview');

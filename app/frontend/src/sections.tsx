@@ -1,8 +1,8 @@
-import type { analyse } from '../wailsjs/go/models';
+import type { main } from '../wailsjs/go/models';
 import { comma, fmtSec, initial, cmpA, cmpB, cmpAS, cmpBS } from './format';
 import { GrowthChart, SentimentChart, ReplySpeedChart, SankeyChart, Heatmap, DailyActivity } from './charts';
 
-type S = analyse.Stats;
+type S = main.StatsDTO;
 
 function Avatar({ name, who }: { name: string; who: 'me' | 'them' }) {
   return <span className={`av av-${who}`}>{initial(name)}</span>;

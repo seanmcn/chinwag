@@ -56,20 +56,82 @@ func (a *App) DistinctAuthors(path string) ([]string, error) {
 	return out, nil
 }
 
+// StatsDTO mirrors analyse.Stats but flattens the inline Period struct
+// (which uses time.Time and an anonymous struct that the Wails binding
+// generator can't introspect) into ISO-8601 strings the frontend can use.
+type StatsDTO struct {
+	Participants      [2]string                    `json:"Participants"`
+	Period            PeriodDTO                    `json:"Period"`
+	Messages          int                          `json:"Messages"`
+	Conversations     int                          `json:"Conversations"`
+	ChatPoints        int                          `json:"ChatPoints"`
+	PerUser           map[string]*analyse.UserStats `json:"PerUser"`
+	Timeline          []analyse.GrowthPoint        `json:"Timeline"`
+	Heatmap           [7][24]int                   `json:"Heatmap"`
+	DailyActivity     []analyse.DayCount           `json:"DailyActivity"`
+	Convos            analyse.ConvoStats           `json:"Convos"`
+	Insights          []string                     `json:"Insights"`
+	Rating            int                          `json:"Rating"`
+	RatingLabel       string                       `json:"RatingLabel"`
+	Balance           map[string]int               `json:"Balance"`
+	BalancePct        map[string]int               `json:"BalancePct"`
+	TopWeekdayHr      string                       `json:"TopWeekdayHr"`
+	CharsTyped        int                          `json:"CharsTyped"`
+	TimeTyping        string                       `json:"TimeTyping"`
+	Direction         map[string]int               `json:"Direction"`
+	LongestStreak     int                          `json:"LongestStreak"`
+	CurrentStreak     int                          `json:"CurrentStreak"`
+	TopTerms          []string                     `json:"TopTerms"`
+	SentimentTimeline []analyse.SentimentPoint     `json:"SentimentTimeline"`
+	TopDomains        []analyse.DomainCount        `json:"TopDomains"`
+}
+
+// PeriodDTO is a Wails-bindable replacement for analyse.Stats.Period.
+type PeriodDTO struct {
+	Start string `json:"Start"`
+	End   string `json:"End"`
+}
+
 // Analyse parses the file and runs the full statistics computation.
 // gapHours is the conversation-gap threshold in hours (defaults to 6 if <=0).
-func (a *App) Analyse(path, me, them string, gapHours int) (analyse.Stats, error) {
+func (a *App) Analyse(path, me, them string, gapHours int) (StatsDTO, error) {
 	msgs, err := parser.ParseFile(path)
 	if err != nil {
-		return analyse.Stats{}, err
+		return StatsDTO{}, err
 	}
 	if len(msgs) == 0 {
-		return analyse.Stats{}, fmt.Errorf("no messages parsed — check the file format")
+		return StatsDTO{}, fmt.Errorf("no messages parsed — check the file format")
 	}
 	gap := time.Duration(gapHours) * time.Hour
 	if gap <= 0 {
 		gap = 6 * time.Hour
 	}
-	return analyse.Run(msgs, me, them, gap), nil
+	s := analyse.Run(msgs, me, them, gap)
+	return StatsDTO{
+		Participants:      s.Participants,
+		Period:            PeriodDTO{Start: s.Period.Start.Format(time.RFC3339), End: s.Period.End.Format(time.RFC3339)},
+		Messages:          s.Messages,
+		Conversations:     s.Conversations,
+		ChatPoints:        s.ChatPoints,
+		PerUser:           s.PerUser,
+		Timeline:          s.Timeline,
+		Heatmap:           s.Heatmap,
+		DailyActivity:     s.DailyActivity,
+		Convos:            s.Convos,
+		Insights:          s.Insights,
+		Rating:            s.Rating,
+		RatingLabel:       s.RatingLabel,
+		Balance:           s.Balance,
+		BalancePct:        s.BalancePct,
+		TopWeekdayHr:      s.TopWeekdayHr,
+		CharsTyped:        s.CharsTyped,
+		TimeTyping:        s.TimeTyping,
+		Direction:         s.Direction,
+		LongestStreak:     s.LongestStreak,
+		CurrentStreak:     s.CurrentStreak,
+		TopTerms:          s.TopTerms,
+		SentimentTimeline: s.SentimentTimeline,
+		TopDomains:        s.TopDomains,
+	}, nil
 }
 

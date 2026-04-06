@@ -7,7 +7,8 @@ import {
   Filler, Legend, Tooltip,
 } from 'chart.js';
 import { SankeyController, Flow } from 'chartjs-chart-sankey';
-import type { analyse } from '../wailsjs/go/models';
+import type { main } from '../wailsjs/go/models';
+type Stats = main.StatsDTO;
 
 Chart.register(
   LineController, BarController, LineElement, BarElement, PointElement,
@@ -32,7 +33,7 @@ function useChart(make: () => Chart | undefined, deps: unknown[]) {
   return ref;
 }
 
-export function GrowthChart({ stats }: { stats: analyse.Stats }) {
+export function GrowthChart({ stats }: { stats: Stats }) {
   const [me, them] = stats.Participants;
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -60,7 +61,7 @@ export function GrowthChart({ stats }: { stats: analyse.Stats }) {
   return <div className="chart-box tall"><canvas ref={ref} /></div>;
 }
 
-export function SentimentChart({ stats }: { stats: analyse.Stats }) {
+export function SentimentChart({ stats }: { stats: Stats }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!ref.current || !stats.SentimentTimeline?.length) return;
@@ -86,7 +87,7 @@ export function SentimentChart({ stats }: { stats: analyse.Stats }) {
   return <div className="chart-box"><canvas ref={ref} /></div>;
 }
 
-export function ReplySpeedChart({ stats }: { stats: analyse.Stats }) {
+export function ReplySpeedChart({ stats }: { stats: Stats }) {
   const [me, them] = stats.Participants;
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -121,7 +122,7 @@ export function ReplySpeedChart({ stats }: { stats: analyse.Stats }) {
   return <div className="chart-box"><canvas ref={ref} /></div>;
 }
 
-export function SankeyChart({ stats }: { stats: analyse.Stats }) {
+export function SankeyChart({ stats }: { stats: Stats }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!ref.current || !stats.Convos?.Sankey?.length) return;
@@ -144,7 +145,7 @@ export function SankeyChart({ stats }: { stats: analyse.Stats }) {
   return <div className="chart-box tall"><canvas ref={ref} /></div>;
 }
 
-export function Heatmap({ stats }: { stats: analyse.Stats }) {
+export function Heatmap({ stats }: { stats: Stats }) {
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let max = 1;
   for (let d = 0; d < 7; d++) for (let h = 0; h < 24; h++) if ((stats.Heatmap?.[d]?.[h] ?? 0) > max) max = stats.Heatmap[d][h];
@@ -164,7 +165,7 @@ export function Heatmap({ stats }: { stats: analyse.Stats }) {
   return <div id="heatmap">{cells}</div>;
 }
 
-export function DailyActivity({ stats }: { stats: analyse.Stats }) {
+export function DailyActivity({ stats }: { stats: Stats }) {
   const days = stats.DailyActivity ?? [];
   if (!days.length) return null;
   const padded = [...days];
