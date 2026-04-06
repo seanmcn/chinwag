@@ -1,0 +1,22 @@
+# Chat exports / local data
+data/*
+!data/.gitkeep
+
+# Built binaries
+/whatsapp-analyse
+/bin/
+*.exe
+*.test
+*.out
+
+# Go
+vendor/
+coverage.out
+*.prof
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
