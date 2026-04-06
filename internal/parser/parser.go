@@ -59,7 +59,20 @@ func parseZip(path string) ([]Message, error) {
 		return nil, err
 	}
 	defer r.Close()
-	for _, zf := range r.File {
+	return parseZipFiles(r.File)
+}
+
+// ParseZipReader parses a WhatsApp .zip export from an in-memory reader.
+func ParseZipReader(r io.ReaderAt, size int64) ([]Message, error) {
+	zr, err := zip.NewReader(r, size)
+	if err != nil {
+		return nil, err
+	}
+	return parseZipFiles(zr.File)
+}
+
+func parseZipFiles(files []*zip.File) ([]Message, error) {
+	for _, zf := range files {
 		if strings.HasSuffix(zf.Name, ".txt") {
 			rc, err := zf.Open()
 			if err != nil {

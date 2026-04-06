@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/seanmcn/whatsapp-analyse/internal/analyse"
@@ -19,9 +18,10 @@ func main() {
 	gap := flag.Duration("gap", 6*time.Hour, "conversation gap threshold")
 	flag.Parse()
 	if flag.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "usage: whatsapp-analyse [flags] <chat.txt|chat.zip>")
-		flag.PrintDefaults()
-		os.Exit(2)
+		if err := server.ServeUpload(*addr, *gap); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 	msgs, err := parser.ParseFile(flag.Arg(0))
 	if err != nil {
