@@ -48,6 +48,21 @@ whatsapp-analyse --me Sean --them "Harry Young" data/Harry\ Young.zip
 | `--addr` | `127.0.0.1:8080` | Listen address |
 | `--gap` | `6h` | Silence threshold for splitting conversations |
 
+## Run with Docker
+
+If you'd rather not install Go, clone the repo and run it in Docker. With no
+file argument the server starts in upload mode and serves a small web form.
+
+```sh
+git clone https://github.com/seanmcn/whatsapp-analyse
+cd whatsapp-analyse
+docker build -t whatsapp-analyse .
+docker run --rm -p 8080:8080 whatsapp-analyse
+```
+
+Then open <http://localhost:8080> and upload your `.txt` or `.zip` export.
+Files are processed in memory and never written to disk.
+
 ## What you get
 
 - **Top bar** — chat points, time period, total messages and conversations.
