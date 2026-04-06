@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
 :root{
-  --bg:#3a3f5c;
-  --bg2:#444a68;
-  --card:#444a68;
-  --card-bd:#ffffff14;
-  --ink:#eef0ff;
-  --muted:#9aa0c4;
-  --me:#3aa3ff;
-  --them:#39d9c0;
-  --good:#4ade80;
-  --bad:#f87171;
-  --chip-bd:#ffffff10;
+  --bg:#0e1116;
+  --bg2:#161b22;
+  --card:#161b22;
+  --card-bd:#30363d;
+  --ink:#e6edf3;
+  --muted:#8b949e;
+  --me:#58a6ff;
+  --them:#3fb950;
+  --good:#3fb950;
+  --bad:#f85149;
+  --chip-bd:#30363d;
 }
 
 *{box-sizing:border-box}
@@ -19,7 +19,7 @@ html,body{margin:0}
 body{
   font-family:'Inter Tight',-apple-system,system-ui,sans-serif;
   font-feature-settings:'ss01','cv11';
-  background:radial-gradient(1200px 800px at 20% -10%,#494e72 0%,var(--bg) 60%);
+  background:var(--bg);
   color:var(--ink);
   padding:18px;
   font-size:13px;
@@ -72,7 +72,7 @@ body{
   color:var(--muted);font-weight:700;display:flex;align-items:center;gap:8px;
 }
 .card h2 .ico{font-size:14px}
-.card .sub{margin:6px 0 14px;font-size:11.5px;color:#9aa0c4cc}
+.card .sub{margin:6px 0 14px;font-size:11.5px;color:var(--muted)}
 
 /* ── Grid ────────────────────────────────────────────── */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
