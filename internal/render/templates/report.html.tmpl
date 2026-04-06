@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your chat with {{.Them}}</title>
+<link rel="stylesheet" href="/static/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.1/dist/chartjs-chart-sankey.min.js"></script>
+</head>
+<body>
+{{$me := .Me}}{{$them := .Them}}{{$pme := index .S.PerUser .Me}}{{$pthem := index .S.PerUser .Them}}
+
+<header class="topbar">
+  <div class="pill">
+    <div class="pill-num">{{comma .S.ChatPoints}}</div>
+    <div class="pill-lbl"><span class="ic">✅</span> Chat Points</div>
+  </div>
+  <div class="pill">
+    <div class="pill-num">{{.PeriodLen}}</div>
+    <div class="pill-lbl"><span class="ic">⏳</span> Time Period</div>
+  </div>
+  <div class="pill title">
+    <div class="title-row">
+      <span class="av av-me">{{initial $me}}</span>
+      <div class="title-text">
+        <div class="title-name">Your chat with {{$them}}</div>
+        <div class="title-sub">From {{.PeriodStart}} – {{.PeriodEnd}}</div>
+      </div>
+      <span class="av av-them">{{initial $them}}</span>
+    </div>
+  </div>
+  <div class="pill">
+    <div class="pill-num">{{comma .S.Messages}}</div>
+    <div class="pill-lbl"><span class="ic">💬</span> Messages</div>
+  </div>
+  <div class="pill">
+    <div class="pill-num">{{comma .S.Conversations}}</div>
+    <div class="pill-lbl"><span class="ic">🔀</span> Conversations</div>
+  </div>
+</header>
+
+<section class="card wide">
+  <h2><span class="ico">📈</span> Relationship Growth</h2>
+  <p class="sub">A look at the number of messages exchanged over time.</p>
+  <div class="chart-box"><canvas id="growth"></canvas></div>
+</section>
+
+<div class="grid">
+
+  <section class="card">
+    <h2><span class="ico">🏆</span> Chat Rating</h2>
+    <p class="sub">An overall score based on balance, response speed, and reciprocity.</p>
+    <div class="rating-wrap">
+      <svg class="ring" width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" stroke="#ffffff15" stroke-width="10" fill="none"/>
+        <circle cx="60" cy="60" r="52" stroke="#4ade80" stroke-width="10" fill="none"
+          stroke-linecap="round" stroke-dasharray="326.7"
+          stroke-dashoffset="{{printf "%.1f" (.RingOffset)}}"
+          transform="rotate(-90 60 60)"/>
+        <text x="60" y="68" text-anchor="middle" font-size="34" font-weight="700" fill="#e8ebff">{{.S.Rating}}</text>
+      </svg>
+      <div class="rating-label">{{.S.RatingLabel}}</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">🧠</span> Key Insights</h2>
+    <p class="sub">The most notable observations from your conversations.</p>
+    <ul class="insights">
+    {{range .S.Insights}}<li><span class="dot"></span>{{.}}</li>{{end}}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">😀</span> Language Analysis</h2>
+    <p class="sub">Word, emoji, and sentiment patterns.</p>
+    <div class="emoji-block">
+      <div class="emoji-head">TOP EMOJIS</div>
+      <div class="emoji-row"><span class="av av-me">{{initial $me}}</span><span class="who">{{$me}}</span>
+        {{range $pme.TopEmojis}}<span class="emj">{{.Emoji}} <b>{{comma .Count}}</b></span>{{end}}
+      </div>
+      <div class="emoji-row"><span class="av av-them">{{initial $them}}</span><span class="who">{{$them}}</span>
+        {{range $pthem.TopEmojis}}<span class="emj">{{.Emoji}} <b>{{comma .Count}}</b></span>{{end}}
+      </div>
+    </div>
+    <table class="kv">
+      <tr class="kv-head"><th></th><th><span class="av av-me sm">{{initial $me}}</span> {{$me}}</th><th><span class="av av-them sm">{{initial $them}}</span> {{$them}}</th></tr>
+      <tr><td>Emojis</td><td><span class="chip {{cmpA $pme.Emojis $pthem.Emojis}}">{{comma $pme.Emojis}}</span></td><td><span class="chip {{cmpB $pme.Emojis $pthem.Emojis}}">{{comma $pthem.Emojis}}</span></td></tr>
+      <tr><td>Laughs</td><td><span class="chip {{cmpA $pme.Laughs $pthem.Laughs}}">{{comma $pme.Laughs}}</span></td><td><span class="chip {{cmpB $pme.Laughs $pthem.Laughs}}">{{comma $pthem.Laughs}}</span></td></tr>
+      <tr><td>Apologies</td><td><span class="chip {{cmpA $pme.Apologies $pthem.Apologies}}">{{comma $pme.Apologies}}</span></td><td><span class="chip {{cmpB $pme.Apologies $pthem.Apologies}}">{{comma $pthem.Apologies}}</span></td></tr>
+      <tr><td>Questions</td><td><span class="chip {{cmpA $pme.Questions $pthem.Questions}}">{{comma $pme.Questions}}</span></td><td><span class="chip {{cmpB $pme.Questions $pthem.Questions}}">{{comma $pthem.Questions}}</span></td></tr>
+      <tr><td>Encouragement</td><td><span class="chip {{cmpA $pme.Encouragement $pthem.Encouragement}}">{{comma $pme.Encouragement}}</span></td><td><span class="chip {{cmpB $pme.Encouragement $pthem.Encouragement}}">{{comma $pthem.Encouragement}}</span></td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">⚖️</span> Balance</h2>
+    <p class="sub">How the relationship is balanced overall.</p>
+    <div class="balance-pts">
+      <div class="pts left">{{comma (index .S.Balance $me)}} pts</div>
+      <div class="pts right">{{comma (index .S.Balance $them)}} pts</div>
+    </div>
+    <div class="bar">
+      <div class="left" style="width:{{index .S.BalancePct $me}}%">{{index .S.BalancePct $me}}%</div>
+      <div class="right" style="width:{{index .S.BalancePct $them}}%">{{index .S.BalancePct $them}}%</div>
+    </div>
+    <div class="balance-foot">
+      <span class="av av-me sm">{{initial $me}}</span>
+      <span class="balance-tag">{{.BalanceTag}}</span>
+      <span class="av av-them sm">{{initial $them}}</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">💬</span> Message Analysis</h2>
+    <p class="sub">Volume and richness of writing.</p>
+    <table class="kv">
+      <tr class="kv-head"><th></th><th><span class="av av-me sm">{{initial $me}}</span> {{$me}}</th><th><span class="av av-them sm">{{initial $them}}</span> {{$them}}</th></tr>
+      <tr><td>Messages</td><td><span class="chip {{cmpA $pme.Messages $pthem.Messages}}">{{comma $pme.Messages}}</span></td><td><span class="chip {{cmpB $pme.Messages $pthem.Messages}}">{{comma $pthem.Messages}}</span></td></tr>
+      <tr><td>Words</td><td><span class="chip {{cmpA $pme.Words $pthem.Words}}">{{comma $pme.Words}}</span></td><td><span class="chip {{cmpB $pme.Words $pthem.Words}}">{{comma $pthem.Words}}</span></td></tr>
+      <tr><td>Unique Words</td><td><span class="chip {{cmpA $pme.UniqueWords $pthem.UniqueWords}}">{{comma $pme.UniqueWords}}</span></td><td><span class="chip {{cmpB $pme.UniqueWords $pthem.UniqueWords}}">{{comma $pthem.UniqueWords}}</span></td></tr>
+      <tr><td>Characters</td><td><span class="chip {{cmpA $pme.Characters $pthem.Characters}}">{{comma $pme.Characters}}</span></td><td><span class="chip {{cmpB $pme.Characters $pthem.Characters}}">{{comma $pthem.Characters}}</span></td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">🎬</span> Media Stats</h2>
+    <p class="sub">Files, links, and reactions shared.</p>
+    <table class="kv">
+      <tr class="kv-head"><th></th><th><span class="av av-me sm">{{initial $me}}</span> {{$me}}</th><th><span class="av av-them sm">{{initial $them}}</span> {{$them}}</th></tr>
+      <tr><td>Images</td><td><span class="chip {{cmpA $pme.Images $pthem.Images}}">{{comma $pme.Images}}</span></td><td><span class="chip {{cmpB $pme.Images $pthem.Images}}">{{comma $pthem.Images}}</span></td></tr>
+      <tr><td>Videos</td><td><span class="chip {{cmpA $pme.Videos $pthem.Videos}}">{{comma $pme.Videos}}</span></td><td><span class="chip {{cmpB $pme.Videos $pthem.Videos}}">{{comma $pthem.Videos}}</span></td></tr>
+      <tr><td>Audios</td><td><span class="chip {{cmpA $pme.Audios $pthem.Audios}}">{{comma $pme.Audios}}</span></td><td><span class="chip {{cmpB $pme.Audios $pthem.Audios}}">{{comma $pthem.Audios}}</span></td></tr>
+      <tr><td>GIFs</td><td><span class="chip {{cmpA $pme.GIFs $pthem.GIFs}}">{{comma $pme.GIFs}}</span></td><td><span class="chip {{cmpB $pme.GIFs $pthem.GIFs}}">{{comma $pthem.GIFs}}</span></td></tr>
+      <tr><td>Stickers</td><td><span class="chip {{cmpA $pme.Stickers $pthem.Stickers}}">{{comma $pme.Stickers}}</span></td><td><span class="chip {{cmpB $pme.Stickers $pthem.Stickers}}">{{comma $pthem.Stickers}}</span></td></tr>
+      <tr><td>Links</td><td><span class="chip {{cmpA $pme.Links $pthem.Links}}">{{comma $pme.Links}}</span></td><td><span class="chip {{cmpB $pme.Links $pthem.Links}}">{{comma $pthem.Links}}</span></td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">⏰</span> Messaging Times</h2>
+    <p class="sub">When during the week and day you communicate.</p>
+    <div id="heatmap"></div>
+    <div class="times-foot">{{.S.TopWeekdayHr}}</div>
+    <div class="times-foot tiny">Characters typed: <b>{{comma .S.CharsTyped}}</b> · Time typing: <b>{{.S.TimeTyping}}</b></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">⚡</span> Responding</h2>
+    <p class="sub">Reply speed and rhythm.</p>
+    <table class="kv">
+      <tr class="kv-head"><th></th><th><span class="av av-me sm">{{initial $me}}</span> {{$me}}</th><th><span class="av av-them sm">{{initial $them}}</span> {{$them}}</th></tr>
+      <tr><td>Rapid 1st Response</td><td><span class="chip {{cmpA $pme.RapidFirstPct $pthem.RapidFirstPct}}">{{$pme.RapidFirstPct}}%</span></td><td><span class="chip {{cmpB $pme.RapidFirstPct $pthem.RapidFirstPct}}">{{$pthem.RapidFirstPct}}%</span></td></tr>
+      <tr><td>Avg 1st Response</td><td><span class="chip {{cmpAS $pme.AvgFirstResp $pthem.AvgFirstResp}}">{{fmtSec $pme.AvgFirstResp}}</span></td><td><span class="chip {{cmpBS $pme.AvgFirstResp $pthem.AvgFirstResp}}">{{fmtSec $pthem.AvgFirstResp}}</span></td></tr>
+      <tr><td>Avg Response Time</td><td><span class="chip {{cmpAS $pme.AvgResponse $pthem.AvgResponse}}">{{fmtSec $pme.AvgResponse}}</span></td><td><span class="chip {{cmpBS $pme.AvgResponse $pthem.AvgResponse}}">{{fmtSec $pthem.AvgResponse}}</span></td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="ico">🔀</span> Conversation Analysis</h2>
+    <p class="sub">How conversations begin, unfold, and close.</p>
+    <table class="kv">
+      <tr class="kv-head"><th></th><th><span class="av av-me sm">{{initial $me}}</span> {{$me}}</th><th><span class="av av-them sm">{{initial $them}}</span> {{$them}}</th></tr>
+      <tr><td>Convos Started</td><td><span class="chip {{cmpA $pme.ConvosStarted $pthem.ConvosStarted}}">{{comma $pme.ConvosStarted}}</span></td><td><span class="chip {{cmpB $pme.ConvosStarted $pthem.ConvosStarted}}">{{comma $pthem.ConvosStarted}}</span></td></tr>
+      <tr><td>Convos Closed</td><td><span class="chip {{cmpA $pme.ConvosClosed $pthem.ConvosClosed}}">{{comma $pme.ConvosClosed}}</span></td><td><span class="chip {{cmpB $pme.ConvosClosed $pthem.ConvosClosed}}">{{comma $pthem.ConvosClosed}}</span></td></tr>
+      <tr><td>Top Contributor</td><td><span class="chip {{cmpA $pme.TopContrib $pthem.TopContrib}}">{{comma $pme.TopContrib}}</span></td><td><span class="chip {{cmpB $pme.TopContrib $pthem.TopContrib}}">{{comma $pthem.TopContrib}}</span></td></tr>
+      <tr><td>Avg Convo Points</td><td><span class="chip">{{commaF $pme.AvgConvoPts}}</span></td><td><span class="chip">{{commaF $pthem.AvgConvoPts}}</span></td></tr>
+      <tr><td>Reconnects</td><td><span class="chip {{cmpA $pme.Reconnects $pthem.Reconnects}}">{{comma $pme.Reconnects}}</span></td><td><span class="chip {{cmpB $pme.Reconnects $pthem.Reconnects}}">{{comma $pthem.Reconnects}}</span></td></tr>
+      <tr><td>Double Messages</td><td><span class="chip">{{comma $pme.DoubleMsgs}}</span></td><td><span class="chip">{{comma $pthem.DoubleMsgs}}</span></td></tr>
+      <tr><td>Convos Missed</td><td><span class="chip">{{comma $pme.ConvosMissed}}</span></td><td><span class="chip">{{comma $pthem.ConvosMissed}}</span></td></tr>
+    </table>
+  </section>
+
+</div>
+
+<section class="card wide">
+  <h2><span class="ico">🔀</span> Conversation Flow</h2>
+  <p class="sub">How conversations typically start, unfold, and taper off between people.</p>
+  <div class="chart-box tall"><canvas id="sankey"></canvas></div>
+</section>
+
+<section class="card wide">
+  <h2><span class="ico">📅</span> Daily Chat Activity (last 500 days)</h2>
+  <p class="sub">A heatmap of activity over the most recent year and a half.</p>
+  <div id="daily-grid"></div>
+</section>
+
+<script>window.__DATA__ = {{.JSON}};</script>
+<script src="/static/charts.js"></script>
+</body>
+</html>
