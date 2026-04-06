@@ -1,105 +1,84 @@
-# Chinwag
+# WhatsApp Analyse
 
-A small Go CLI that turns a WhatsApp chat export into a single-page dashboard
-about your relationship with one other person — message volume, response
-rhythm, top emojis, conversation flow, and a few cheeky observations.
+A native desktop app (macOS / Windows) that turns a WhatsApp chat export into
+a dashboard about your relationship with one other person — message volume,
+response rhythm, top emojis, conversation flow, sentiment, and a few cheeky
+observations. A small CLI is also included for terminal/scripted use.
 
 Everything runs locally. Your chats never leave your machine.
 
-## Install
+## Desktop app
 
-```sh
-go install github.com/seanmcn/whatsapp-analyse/cmd/whatsapp-analyse@latest
-```
+Grab the latest release from the [Releases page](https://github.com/seanmcn/whatsapp-analyse/releases):
 
-Or build from source:
+- **macOS**: `WhatsApp-Analyse-macOS.zip` (universal binary)
+- **Windows**: `WhatsApp-Analyse-Windows.zip`
 
-```sh
-git clone https://github.com/seanmcn/whatsapp-analyse
-cd whatsapp-analyse
-go build ./cmd/whatsapp-analyse
-```
+Builds aren't yet code-signed, so on first launch you'll need to right-click →
+*Open* on macOS or click *More info → Run anyway* on Windows SmartScreen.
 
-## Get a chat export
+Once open, click **Open chat export…**, pick your `.txt` or `.zip` export,
+choose which person is "you", and hit **Analyse**.
+
+### Get a chat export
 
 In WhatsApp, open a chat → ⋯ menu → **Export chat** → *Without media*. You'll
 get a `.txt` file (or a `.zip` containing one). Both work.
 
-## Run
+## CLI
+
+For scripts, terminals, or piping into `jq`:
 
 ```sh
-whatsapp-analyse path/to/_chat.zip
+go install github.com/seanmcn/whatsapp-analyse/cmd/whatsapp-analyse@latest
+whatsapp-analyse --me Sean --them "Harry Young" data/chat.zip
+whatsapp-analyse --format json data/chat.zip | jq .Messages
 ```
-
-Then open <http://127.0.0.1:8080>.
-
-By default the two most-frequent authors are picked automatically. To override:
-
-```sh
-whatsapp-analyse --me Sean --them "Harry Young" data/Harry\ Young.zip
-```
-
-### Flags
 
 | Flag | Default | Notes |
 |---|---|---|
 | `--me` | top author | Your name as it appears in the chat |
 | `--them` | 2nd author | The other person |
-| `--addr` | `127.0.0.1:8080` | Listen address |
 | `--gap` | `6h` | Silence threshold for splitting conversations |
+| `--format` | `text` | `text` or `json` |
 
-## Run with Docker
-
-If you'd rather not install Go, clone the repo and run it in Docker. With no
-file argument the server starts in upload mode and serves a small web form.
+A Docker image is available for the CLI:
 
 ```sh
-git clone https://github.com/seanmcn/whatsapp-analyse
-cd whatsapp-analyse
 docker build -t whatsapp-analyse .
-docker run --rm -p 8080:8080 whatsapp-analyse
-```
-
-Then open <http://localhost:8080> and upload your `.txt` or `.zip` export.
-Files are processed in memory and never written to disk.
-
-## What you get
-
-- **Top bar** — chat points, time period, total messages and conversations.
-- **Relationship growth** — monthly message volume per person.
-- **Chat rating** — a 0–100 score from balance, response speed, and reciprocity.
-- **Key insights** — observations like *"You laugh more than your contact"*.
-- **Language analysis** — emojis, laughs, apologies, questions, encouragement,
-  and each person's top 5 emojis.
-- **Balance** — how evenly the conversation is shared.
-- **Message & media analysis** — words, unique words, characters, images,
-  videos, audios, GIFs, stickers, links.
-- **Responding** — rapid first replies, average first response, average reply
-  time.
-- **Conversation analysis** — convos started, closed, missed, reconnects,
-  double messages.
-- **Messaging times** — weekday × hour heatmap of when you actually talk.
-- **Conversation flow** — sankey of how chats start, who carries them, and
-  who has the last word.
-- **Daily chat activity** — GitHub-style grid for the last 500 days.
-
-## Project layout
-
-```
-cmd/whatsapp-analyse/   CLI entrypoint
-internal/parser/        WhatsApp export parser (iOS, Android, .zip)
-internal/analyse/       Stats, conversations, insights, rating
-internal/render/        html/template + embedded CSS/JS
-internal/server/        Local http server
-testdata/               Tiny sample chat for tests
-data/                   Drop your real exports here (gitignored)
+docker run --rm -v "$PWD/data:/data" whatsapp-analyse /data/chat.zip
 ```
 
 ## Development
 
+The repo is a Go workspace: the root module holds the parser/analyse engine
+and CLI; `app/` is the Wails desktop app.
+
 ```sh
-go test ./...
+# Run the CLI against the bundled sample
 go run ./cmd/whatsapp-analyse testdata/sample_chat.txt
+
+# Run the desktop app in dev mode (requires Wails: go install github.com/wailsapp/wails/v2/cmd/wails@latest)
+cd app && wails dev
+
+# Build the desktop app
+cd app && wails build
+
+# Tests
+go test ./...
+```
+
+### Project layout
+
+```
+cmd/whatsapp-analyse/   CLI entrypoint (text/JSON output)
+internal/parser/        WhatsApp export parser (iOS, Android, .zip)
+internal/analyse/       Stats, conversations, insights, rating, sentiment
+app/                    Wails desktop app (Go backend + React/TS frontend)
+app/frontend/src/       UI components, charts, format helpers
+.github/workflows/      CI and tagged release pipelines
+testdata/               Tiny sample chat for tests
+data/                   Drop your real exports here (gitignored)
 ```
 
 ## License
