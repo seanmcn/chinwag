@@ -8,16 +8,16 @@ name: Release
 # corresponding secret is set, so the workflow runs unchanged once certs
 # are added later.
 #
-# macOS secrets (all optional, all required to actually sign+notarize):
+# macOS signing is opt-in: the codesign+notarize step is skipped unless
+# APPLE_CERT is set as a repo secret. To enable signing, add all of:
 #   APPLE_CERT              base64 .p12 developer ID application cert
 #   APPLE_CERT_PASSWORD     password for the .p12
 #   APPLE_TEAM_ID           Apple Developer team id
 #   APPLE_NOTARIZE_USER     Apple ID for notarytool
 #   APPLE_NOTARIZE_PASS     app-specific password for notarytool
 #
-# Windows secrets (all optional):
-#   WINDOWS_CERT            base64 .pfx code-signing cert
-#   WINDOWS_CERT_PASSWORD   password for the .pfx
+# Windows builds are intentionally unsigned for now — first-launch users will
+# see a SmartScreen warning and need to click "More info → Run anyway".
 
 on:
   push:
@@ -39,6 +39,13 @@ jobs:
             platform: windows/amd64
             artifact: WhatsApp-Analyse-Windows.zip
     runs-on: ${{ matrix.os }}
+    env:
+      # Surfaced to job-level so step `if:` conditions can read them.
+      APPLE_CERT: ${{ secrets.APPLE_CERT }}
+      APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_NOTARIZE_USER: ${{ secrets.APPLE_NOTARIZE_USER }}
+      APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -58,15 +65,9 @@ jobs:
         working-directory: app
         run: wails build -platform ${{ matrix.platform }} -clean
 
-      # ── macOS sign + notarize (no-op without secrets) ──
+      # ── macOS sign + notarize (skipped unless APPLE_CERT is set) ──
       - name: macOS codesign + notarize
         if: runner.os == 'macOS' && env.APPLE_CERT != ''
-        env:
-          APPLE_CERT: ${{ secrets.APPLE_CERT }}
-          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_NOTARIZE_USER: ${{ secrets.APPLE_NOTARIZE_USER }}
-          APPLE_NOTARIZE_PASS: ${{ secrets.APPLE_NOTARIZE_PASS }}
         run: |
           echo "$APPLE_CERT" | base64 -d > /tmp/cert.p12
           security create-keychain -p actions build.keychain
@@ -84,20 +85,6 @@ jobs:
             --team-id "$APPLE_TEAM_ID" \
             --wait
           xcrun stapler staple "app/build/bin/whatsapp-analyse-app.app"
-
-      # ── Windows signtool (no-op without secrets) ──
-      - name: Windows signtool
-        if: runner.os == 'Windows' && env.WINDOWS_CERT != ''
-        env:
-          WINDOWS_CERT: ${{ secrets.WINDOWS_CERT }}
-          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
-        shell: pwsh
-        run: |
-          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\cert.pfx", [Convert]::FromBase64String($env:WINDOWS_CERT))
-          & "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign `
-            /f "$env:RUNNER_TEMP\cert.pfx" /p "$env:WINDOWS_CERT_PASSWORD" `
-            /tr http://timestamp.digicert.com /td sha256 /fd sha256 `
-            "app\build\bin\whatsapp-analyse-app.exe"
 
       - name: Package macOS
         if: runner.os == 'macOS'

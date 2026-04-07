@@ -14,8 +14,10 @@ Grab the latest release from the [Releases page](https://github.com/seanmcn/what
 - **macOS**: `WhatsApp-Analyse-macOS.zip` (universal binary)
 - **Windows**: `WhatsApp-Analyse-Windows.zip`
 
-Builds aren't yet code-signed, so on first launch you'll need to right-click →
-*Open* on macOS or click *More info → Run anyway* on Windows SmartScreen.
+macOS builds are signed and notarised, so they open like any other Mac app.
+Windows builds are unsigned for now — on first launch SmartScreen will say
+*"Windows protected your PC"*; click **More info → Run anyway**. After that
+Windows remembers and won't ask again.
 
 Once open, click **Open chat export…**, pick your `.txt` or `.zip` export,
 choose which person is "you", and hit **Analyse**.
