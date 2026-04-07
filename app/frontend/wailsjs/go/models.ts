@@ -114,6 +114,7 @@ export namespace analyse {
 	    pos: number;
 	    neg: number;
 	    net: number;
+	    netByAuthor: Record<string, number>;
 	
 	    static createFrom(source: any = {}) {
 	        return new SentimentPoint(source);
@@ -125,6 +126,7 @@ export namespace analyse {
 	        this.pos = source["pos"];
 	        this.neg = source["neg"];
 	        this.net = source["net"];
+	        this.netByAuthor = source["netByAuthor"];
 	    }
 	}
 	export class UserStats {

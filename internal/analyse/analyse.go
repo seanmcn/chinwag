@@ -76,10 +76,11 @@ type GrowthPoint struct {
 }
 
 type SentimentPoint struct {
-	Month string `json:"month"` // YYYY-MM
-	Pos   int    `json:"pos"`
-	Neg   int    `json:"neg"`
-	Net   int    `json:"net"`
+	Month       string         `json:"month"` // YYYY-MM
+	Pos         int            `json:"pos"`
+	Neg         int            `json:"neg"`
+	Net         int            `json:"net"`
+	NetByAuthor map[string]int `json:"netByAuthor"`
 }
 
 type DomainCount struct {
@@ -219,13 +220,18 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 		score := ScoreMessage(m.Body, lex)
 		us.CompoundAvg += score.Vader.Compound
 		us.ScoredMsgs++
+		if sp.NetByAuthor == nil {
+			sp.NetByAuthor = map[string]int{me: 0, them: 0}
+		}
 		switch score.Vader.Label() {
 		case 1:
 			us.Positive++
 			sp.Pos++
+			sp.NetByAuthor[m.Author]++
 		case -1:
 			us.Negative++
 			sp.Neg++
+			sp.NetByAuthor[m.Author]--
 		}
 		// NRC emotion / intensity / VAD
 		var msgIntensity float64

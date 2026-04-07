@@ -124,15 +124,19 @@ export function EmotionRadar({ stats }: { stats: Stats }) {
 }
 
 export function SentimentChart({ stats }: { stats: Stats }) {
+  const [me, them] = stats.Participants;
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!ref.current || !stats.SentimentTimeline?.length) return;
+    const meData = stats.SentimentTimeline.map(p => p.netByAuthor?.[me] ?? 0);
+    const themData = stats.SentimentTimeline.map(p => p.netByAuthor?.[them] ?? 0);
     const c = new Chart(ref.current, {
       type: 'line',
       data: {
         labels: stats.SentimentTimeline.map(p => p.month),
         datasets: [
-          { label: 'Net tone', data: stats.SentimentTimeline.map(p => p.net), borderColor: '#f59e0b', backgroundColor: '#f59e0b22', tension: 0.35, pointRadius: 0, fill: true, borderWidth: 2 },
+          { label: me, data: meData, borderColor: COL_ME, backgroundColor: COL_ME + '22', tension: 0.35, pointRadius: 0, fill: true, borderWidth: 2 },
+          { label: them, data: themData, borderColor: COL_THEM, backgroundColor: COL_THEM + '22', tension: 0.35, pointRadius: 0, fill: true, borderWidth: 2 },
         ],
       },
       options: {

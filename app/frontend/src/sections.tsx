@@ -462,7 +462,7 @@ export function Tone({ stats }: { stats: S }) {
       <div className="grid">
         <div style={{ gridColumn: '1 / -1' }}><SentimentCard stats={stats} /></div>
       </div>
-      <Card icon="💗" title="Sentiment over time" wide sub="net upbeat-vs-downbeat tone, monthly"><SentimentChart stats={stats} /></Card>
+      <Card icon="💗" title="Sentiment over time" wide sub="monthly net tone per person"><SentimentChart stats={stats} /></Card>
       <div className="grid">
         <VADCard stats={stats} />
         <IntensityCard stats={stats} />
