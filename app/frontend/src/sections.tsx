@@ -173,23 +173,30 @@ function VolumeCard({ stats }: { stats: S }) {
   );
 }
 
+function TopEmojisCard({ stats }: { stats: S }) {
+  const [me, them] = stats.Participants;
+  const a = stats.PerUser[me], b = stats.PerUser[them];
+  if (!a || !b) return null;
+  return (
+    <Card icon="🥇" title="Top emojis" sub="each side's most-used reactions">
+      <div className="emoji-row">
+        <Avatar name={me} who="me" sm /><span className="who">{me}</span>
+        {(a.TopEmojis ?? []).map((e, i) => <span key={i} className="emj">{e.Emoji} <b>{comma(e.Count)}</b></span>)}
+      </div>
+      <div className="emoji-row">
+        <Avatar name={them} who="them" sm /><span className="who">{them}</span>
+        {(b.TopEmojis ?? []).map((e, i) => <span key={i} className="emj">{e.Emoji} <b>{comma(e.Count)}</b></span>)}
+      </div>
+    </Card>
+  );
+}
+
 function LanguageCard({ stats }: { stats: S }) {
   const [me, them] = stats.Participants;
   const a = stats.PerUser[me], b = stats.PerUser[them];
   if (!a || !b) return null;
   return (
     <Card icon="😀" title="Language analysis" sub="emojis, tone and patterns">
-      <div className="emoji-block">
-        <div className="emoji-head">TOP EMOJIS</div>
-        <div className="emoji-row">
-          <Avatar name={me} who="me" sm /><span className="who">{me}</span>
-          {(a.TopEmojis ?? []).map((e, i) => <span key={i} className="emj">{e.Emoji} <b>{comma(e.Count)}</b></span>)}
-        </div>
-        <div className="emoji-row">
-          <Avatar name={them} who="them" sm /><span className="who">{them}</span>
-          {(b.TopEmojis ?? []).map((e, i) => <span key={i} className="emj">{e.Emoji} <b>{comma(e.Count)}</b></span>)}
-        </div>
-      </div>
       <table className="kv">
         <CompareHead me={me} them={them} />
         <tbody>
@@ -341,6 +348,7 @@ export function Chat({ stats }: { stats: S }) {
       <div className="grid">
         <VolumeCard stats={stats} />
         <LanguageCard stats={stats} />
+        <TopEmojisCard stats={stats} />
         <MediaCard stats={stats} />
         <ResponseTimesCard stats={stats} />
         <ConvoAnalysisCard stats={stats} />
