@@ -168,6 +168,10 @@ body{
 .export-alias input{flex:1;background:transparent;border:0;outline:none;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px 0}
 .export-suffix{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:13px}
 .export-status{color:var(--muted);font-size:13px}
+.export-progress{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.export-progress-bar{height:6px;background:#ffffff10;border-radius:999px;overflow:hidden}
+.export-progress-fill{height:100%;background:#5aa9ff;transition:width .25s ease}
+.export-success{margin-top:14px;padding:10px 12px;border-radius:8px;background:#13301c;border:1px solid #2e6b3a;color:#9be3a8;font-size:13px}
 
 /* ── Top bar ─────────────────────────────────────────── */
 .topbar{display:grid;grid-template-columns:1fr 1fr 2.4fr 1fr 1fr;gap:12px;margin-bottom:18px}

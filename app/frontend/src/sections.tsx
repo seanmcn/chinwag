@@ -667,6 +667,8 @@ export function Export({ stats }: { stats: S }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const enabledTabs = EXPORT_TABS.filter(t => enabled[t.key]);
   const namesValid = aliasMe.trim() !== '' && aliasThem.trim() !== '' && aliasMe.trim() !== aliasThem.trim();
@@ -686,7 +688,7 @@ export function Export({ stats }: { stats: S }) {
   }
 
   async function runExport() {
-    setBusy(true); setStatus(''); setError('');
+    setBusy(true); setStatus(''); setError(''); setSuccess(''); setProgress(null);
     try {
       const renamed = renameStats(stats, aliasMe.trim(), aliasThem.trim());
       let saved: string[] = [];
@@ -707,8 +709,17 @@ export function Export({ stats }: { stats: S }) {
             </>
           ),
         }));
-        saved = await exportTabs(jobs, key => setStatus(`Exporting ${key}…`), dir);
+        const total = jobs.length;
+        let done = 0;
+        setProgress({ done: 0, total });
+        saved = await exportTabs(jobs, key => {
+          setStatus(`Exporting ${key}… (${done + 1}/${total})`);
+          setProgress({ done, total });
+          done += 1;
+        }, dir);
+        setProgress({ done: total, total });
       } else {
+        setProgress({ done: 0, total: 1 });
         setStatus('Rendering…');
         const combined = (
           <>
@@ -722,16 +733,20 @@ export function Export({ stats }: { stats: S }) {
         );
         const path = await renderAndExport(combined, combinedAlias);
         if (path) saved = [path];
+        setProgress({ done: 1, total: 1 });
       }
       if (saved.length === 0) {
         setStatus('Cancelled.');
+        setProgress(null);
       } else {
         const dir = saved[0].replace(/[\\/][^\\/]*$/, '');
-        setStatus(`Saved ${saved.length} ${saved.length === 1 ? 'image' : 'images'} to ${dir}`);
+        setStatus('');
+        setSuccess(`Saved ${saved.length} ${saved.length === 1 ? 'image' : 'images'} to ${dir}`);
       }
     } catch (e: any) {
       setError(String(e?.message ?? e));
       setStatus('');
+      setProgress(null);
     } finally {
       setBusy(false);
     }
@@ -872,12 +887,18 @@ export function Export({ stats }: { stats: S }) {
               <li><strong>Header</strong> → {includeHeader ? 'included' : 'hidden'}</li>
               <li><strong>Output</strong> → {mode === 'combined' ? `single image (${combinedAlias}.jpg)` : `${enabledTabs.length} separate images`}</li>
             </ul>
-            <div className="wizard-actions-row">
-              <button className="primary" disabled={busy} onClick={runExport}>
-                {busy ? 'Exporting…' : 'Export'}
-              </button>
-              {status && <span className="export-status">{status}</span>}
-            </div>
+            {(busy || progress) && (
+              <div className="export-progress" role="status" aria-live="polite">
+                <div className="export-progress-bar">
+                  <div
+                    className="export-progress-fill"
+                    style={{ width: progress ? `${(progress.done / Math.max(progress.total, 1)) * 100}%` : '0%' }}
+                  />
+                </div>
+                {status && <div className="export-status">{status}</div>}
+              </div>
+            )}
+            {success && <div className="export-success">✓ {success}</div>}
             {error && <div className="error">{error}</div>}
           </div>
         )}
@@ -885,8 +906,12 @@ export function Export({ stats }: { stats: S }) {
 
       <div className="wizard-nav">
         <button className="ghost" disabled={step === 0 || busy} onClick={goBack}>← Back</button>
-        {step < 3 && (
+        {step < 3 ? (
           <button className="primary" disabled={!canNext[step] || busy} onClick={goNext}>Next →</button>
+        ) : (
+          <button className="primary" disabled={busy} onClick={runExport}>
+            {busy ? 'Exporting…' : success ? 'Export again' : 'Export'}
+          </button>
         )}
       </div>
     </div>
