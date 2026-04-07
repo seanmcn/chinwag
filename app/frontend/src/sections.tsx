@@ -8,10 +8,10 @@ function Avatar({ name, who, sm }: { name: string; who: 'me' | 'them'; sm?: bool
   return <span className={`av av-${who}${sm ? ' sm' : ''}`}>{initial(name)}</span>;
 }
 
-function Card({ title, sub, children, wide }: { title: string; sub?: string; children: any; wide?: boolean }) {
+function Card({ icon, title, sub, children, wide }: { icon?: string; title: string; sub?: string; children: any; wide?: boolean }) {
   return (
     <div className={`card${wide ? ' wide' : ''}`}>
-      <h2>{title}</h2>
+      <h2>{icon && <span className="ico">{icon}</span>}{title}</h2>
       {sub && <div className="sub">{sub}</div>}
       {children}
     </div>
@@ -60,7 +60,7 @@ function RatingRing({ stats }: { stats: S }) {
   const C = 326.7; // 2πr where r=52
   const offset = C - (C * (stats.Rating / 100));
   return (
-    <Card title="Chat rating" sub="balance, speed, reciprocity">
+    <Card icon="🏆" title="Chat rating" sub="balance, speed, reciprocity">
       <div className="rating-wrap">
         <svg className="ring" width="120" height="120" viewBox="0 0 120 120">
           <circle cx="60" cy="60" r="52" stroke="#ffffff15" strokeWidth="10" fill="none" />
@@ -83,7 +83,7 @@ function BalanceCard({ stats }: { stats: S }) {
   const mePct = stats.BalancePct?.[me] ?? 50;
   const themPct = stats.BalancePct?.[them] ?? 50;
   return (
-    <Card title="Balance" sub="how the relationship is shared overall">
+    <Card icon="⚖️" title="Balance" sub="how the relationship is shared overall">
       <div className="balance-pts">
         <div>{comma(mePts)} pts</div>
         <div>{comma(themPts)} pts</div>
@@ -105,7 +105,7 @@ function StreaksCard({ stats }: { stats: S }) {
   const [me, them] = stats.Participants;
   const meU = stats.PerUser[me]; const themU = stats.PerUser[them];
   return (
-    <Card title="Rhythms & streaks">
+    <Card icon="🌗" title="Rhythms & streaks">
       <div className="streaks">
         <div className="streak"><div className="streak-num">{stats.LongestStreak}</div><div className="streak-lbl">Longest streak (days)</div></div>
         <div className="streak"><div className="streak-num">{stats.CurrentStreak}</div><div className="streak-lbl">Current streak (days)</div></div>
@@ -125,7 +125,7 @@ function StreaksCard({ stats }: { stats: S }) {
 
 function InsightsCard({ stats }: { stats: S }) {
   return (
-    <Card title="Key insights">
+    <Card icon="🧠" title="Key insights">
       <ul className="insights">
         {(stats.Insights ?? []).map((line, i) => (
           <li key={i}><span className="dot" /> {line}</li>
@@ -158,7 +158,7 @@ function VolumeCard({ stats }: { stats: S }) {
     </tr>
   );
   return (
-    <Card title="Message analysis" sub="volume and richness of writing">
+    <Card icon="💬" title="Message analysis" sub="volume and richness of writing">
       <table className="kv">
         <CompareHead me={me} them={them} />
         <tbody>
@@ -178,7 +178,7 @@ function LanguageCard({ stats }: { stats: S }) {
   const a = stats.PerUser[me], b = stats.PerUser[them];
   if (!a || !b) return null;
   return (
-    <Card title="Language analysis" sub="emojis, tone and patterns">
+    <Card icon="😀" title="Language analysis" sub="emojis, tone and patterns">
       <div className="emoji-block">
         <div className="emoji-head">TOP EMOJIS</div>
         <div className="emoji-row">
@@ -216,7 +216,7 @@ function MediaCard({ stats }: { stats: S }) {
     </tr>
   );
   return (
-    <Card title="Media stats" sub="files, links and reactions shared">
+    <Card icon="🎬" title="Media stats" sub="files, links and reactions shared">
       <table className="kv">
         <CompareHead me={me} them={them} />
         <tbody>
@@ -236,7 +236,7 @@ function TopicsCard({ stats }: { stats: S }) {
   const [me, them] = stats.Participants;
   const meU = stats.PerUser[me]; const themU = stats.PerUser[them];
   return (
-    <Card title="Topics & vocabulary" sub="distinctive words and what you both talk about">
+    <Card icon="🏷️" title="Topics & vocabulary" sub="distinctive words and what you both talk about">
       <div className="topic-block">
         <div className="topic-head">DISTINCTIVE TO {me.toUpperCase()}</div>
         <div className="tag-row">{(meU?.TopTerms ?? []).length
@@ -261,7 +261,7 @@ function TopicsCard({ stats }: { stats: S }) {
 
 function DomainsCard({ stats }: { stats: S }) {
   return (
-    <Card title="Top link domains" sub="which sites you share most often">
+    <Card icon="🔗" title="Top link domains" sub="which sites you share most often">
       <div className="tag-row">
         {(stats.TopDomains ?? []).length
           ? stats.TopDomains.map((d, i) => <span key={i} className="tag">{d.domain} <b>{d.count}</b></span>)
@@ -271,29 +271,20 @@ function DomainsCard({ stats }: { stats: S }) {
   );
 }
 
-export function Messages({ stats }: { stats: S }) {
-  return (
-    <div className="grid">
-      <VolumeCard stats={stats} />
-      <LanguageCard stats={stats} />
-      <MediaCard stats={stats} />
-      <div style={{ gridColumn: '1 / -1' }}><TopicsCard stats={stats} /></div>
-      <div style={{ gridColumn: '1 / -1' }}><DomainsCard stats={stats} /></div>
-    </div>
-  );
-}
+// (kept above: VolumeCard, LanguageCard, MediaCard, TopicsCard, DomainsCard)
+// The combined Chat export is defined after the conversation cards below.
 
 // ── Activity ────────────────────────────────────────────────────────
 export function Activity({ stats }: { stats: S }) {
   return (
     <>
-      <Card title="Relationship growth" wide sub="messages exchanged over time"><GrowthChart stats={stats} /></Card>
-      <Card title="Messaging times" wide sub="when during the week and day you talk">
+      <Card icon="📈" title="Relationship growth" wide sub="messages exchanged over time"><GrowthChart stats={stats} /></Card>
+      <Card icon="⏰" title="Messaging times" wide sub="when during the week and day you talk">
         <Heatmap stats={stats} />
         <div className="times-foot">{stats.TopWeekdayHr}</div>
         <div className="times-foot tiny">Characters typed: <b>{comma(stats.CharsTyped)}</b> · Time typing: <b>{stats.TimeTyping}</b></div>
       </Card>
-      <Card title="Daily chat activity" wide sub="last 500 days, GitHub-style"><DailyActivity stats={stats} /></Card>
+      <Card icon="📅" title="Daily chat activity" wide sub="last 500 days, GitHub-style"><DailyActivity stats={stats} /></Card>
     </>
   );
 }
@@ -304,7 +295,7 @@ function ResponseTimesCard({ stats }: { stats: S }) {
   const a = stats.PerUser[me], b = stats.PerUser[them];
   if (!a || !b) return null;
   return (
-    <Card title="Responding" sub="reply speed and rhythm">
+    <Card icon="⚡" title="Responding" sub="reply speed and rhythm">
       <table className="kv">
         <CompareHead me={me} them={them} />
         <tbody>
@@ -324,7 +315,7 @@ function ConvoAnalysisCard({ stats }: { stats: S }) {
   const a = stats.PerUser[me], b = stats.PerUser[them];
   if (!a || !b) return null;
   return (
-    <Card title="Conversation analysis" sub="how chats begin, unfold and close">
+    <Card icon="🔀" title="Conversation analysis" sub="how chats begin, unfold and close">
       <table className="kv">
         <CompareHead me={me} them={them} />
         <tbody>
@@ -341,16 +332,24 @@ function ConvoAnalysisCard({ stats }: { stats: S }) {
   );
 }
 
-export function Conversations({ stats }: { stats: S }) {
+// ── Combined Chat tab ───────────────────────────────────────────────
+// One scrollable page that covers everything about the conversation
+// itself: what was said, how it flowed, and how each side replies.
+export function Chat({ stats }: { stats: S }) {
   return (
     <>
       <div className="grid">
+        <VolumeCard stats={stats} />
+        <LanguageCard stats={stats} />
+        <MediaCard stats={stats} />
         <ResponseTimesCard stats={stats} />
         <ConvoAnalysisCard stats={stats} />
       </div>
-      <Card title="Reply speed by hour" wide sub="average reply latency by hour-of-day"><ReplySpeedChart stats={stats} /></Card>
-      <Card title="Conversation flow" wide sub="how chats start, unfold and taper off"><SankeyChart stats={stats} /></Card>
-      <Card title="Sentiment over time" wide sub="net upbeat-vs-downbeat tone, monthly"><SentimentChart stats={stats} /></Card>
+      <Card icon="⏱️" title="Reply speed by hour" wide sub="average reply latency by hour-of-day"><ReplySpeedChart stats={stats} /></Card>
+      <Card icon="🔀" title="Conversation flow" wide sub="how chats start, unfold and taper off"><SankeyChart stats={stats} /></Card>
+      <Card icon="💗" title="Sentiment over time" wide sub="net upbeat-vs-downbeat tone, monthly"><SentimentChart stats={stats} /></Card>
+      <TopicsCard stats={stats} />
+      <DomainsCard stats={stats} />
     </>
   );
 }

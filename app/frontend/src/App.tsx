@@ -3,15 +3,14 @@ import './App.css';
 import { OpenFileDialog, DistinctAuthors, Analyse } from '../wailsjs/go/main/App';
 import type { main } from '../wailsjs/go/models';
 type Stats = main.StatsDTO;
-import { Topbar, Overview, Messages, Activity, Conversations } from './sections';
+import { Topbar, Overview, Chat, Activity } from './sections';
 
-type Tab = 'overview' | 'messages' | 'activity' | 'conversations';
+type Tab = 'overview' | 'chat' | 'activity';
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'messages', label: 'Messages' },
-  { id: 'activity', label: 'Activity' },
-  { id: 'conversations', label: 'Conversations' },
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'overview', label: 'Overview', icon: '🏠' },
+  { id: 'chat', label: 'Chat', icon: '💬' },
+  { id: 'activity', label: 'Activity', icon: '📊' },
 ];
 
 function App() {
@@ -83,7 +82,9 @@ function App() {
         <div className="sidebar-title">WhatsApp Analyse</div>
         <nav>
           {TABS.map(t => (
-            <button key={t.id} className={`navbtn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
+            <button key={t.id} className={`navbtn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
+              <span className="navico">{t.icon}</span>{t.label}
+            </button>
           ))}
         </nav>
         <div className="sidebar-foot">
@@ -98,9 +99,8 @@ function App() {
       <main className="main">
         <Topbar stats={stats} />
         {tab === 'overview' && <Overview stats={stats} />}
-        {tab === 'messages' && <Messages stats={stats} />}
+        {tab === 'chat' && <Chat stats={stats} />}
         {tab === 'activity' && <Activity stats={stats} />}
-        {tab === 'conversations' && <Conversations stats={stats} />}
       </main>
     </div>
   );
