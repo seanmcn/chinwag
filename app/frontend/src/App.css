@@ -59,10 +59,11 @@ body{
 .error{margin-top:14px;padding:10px 12px;border-radius:8px;background:#f8514920;border:1px solid #f8514955;color:#ffb4ad;font-size:12px}
 
 /* ── App shell ───────────────────────────────────────── */
-.app{display:grid;grid-template-columns:220px 1fr;height:100vh;overflow:hidden}
+.app{display:grid;grid-template-columns:260px 1fr;height:100vh;overflow:hidden}
 .sidebar{
   background:var(--bg2);border-right:1px solid var(--card-bd);
   padding:18px 14px;display:flex;flex-direction:column;gap:14px;
+  overflow-y:auto;
 }
 .sidebar-title{font-weight:800;font-size:16px;letter-spacing:-.2px;padding:0 6px 6px}
 .sidebar nav{display:flex;flex-direction:column;gap:2px}
@@ -76,6 +77,46 @@ body{
 .navbtn:hover{background:#ffffff08}
 .navbtn.active{background:#58a6ff20;color:#9ec8ff;font-weight:600}
 .sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--card-bd)}
+
+/* ── Chat list ───────────────────────────────────────── */
+.chatlist-head{font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700;padding:0 6px}
+.chatlist{display:flex;flex-direction:column;gap:4px}
+.chatlist-row{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid transparent;position:relative;
+}
+.chatlist-row:hover{background:#ffffff08}
+.chatlist-row.active{background:#58a6ff18;border-color:#58a6ff45}
+.chatlist-avs{display:flex;flex-shrink:0}
+.chatlist-avs .av{margin-right:-6px;border:2px solid var(--bg2)}
+.chatlist-meta{flex:1;min-width:0}
+.chatlist-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chatlist-file{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chatlist-remove{
+  flex-shrink:0;background:transparent;border:0;color:var(--muted);
+  width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;
+  opacity:0;transition:opacity .12s,background .12s;
+}
+.chatlist-row:hover .chatlist-remove{opacity:1}
+.chatlist-remove:hover{background:#ffffff14;color:var(--ink)}
+.chatlist-add{
+  margin-top:4px;background:transparent;color:var(--muted);border:1px dashed var(--card-bd);
+  border-radius:8px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit;
+}
+.chatlist-add:hover{background:#ffffff08;color:var(--ink);border-color:#58a6ff66}
+
+/* ── Inline picker (sidebar) ─────────────────────────── */
+.picker.embedded{
+  margin:0;padding:12px;border-radius:10px;background:#0e1116;border:1px solid var(--card-bd);
+  gap:10px;
+}
+.picker.embedded .picker-path{font-size:11px}
+.picker.embedded .who-pills{gap:6px}
+.picker.embedded .who-pill{min-width:0;flex:1;padding:6px 10px}
+.picker.embedded .who-name{font-size:12px}
+.picker.embedded .swap{width:30px;height:30px;font-size:15px}
+.picker-actions{display:flex;gap:8px}
+.picker.embedded .primary{flex:1;padding:9px 12px;font-size:13px}
 .who-row{display:flex;flex-direction:column;gap:8px}
 .who-row select{min-width:0;width:100%}
 
