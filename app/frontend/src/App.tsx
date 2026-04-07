@@ -155,9 +155,45 @@ function App() {
     return (
       <div className="landing">
         <div className="landing-card">
-          <h1>Chinwag</h1>
-          <p className="landing-sub">Open a chat export (.txt or .zip) to see stats, conversation patterns and sentiment.</p>
-          <button className="primary" onClick={pickFile}>Open chat export…</button>
+          <div className="landing-hero">
+            <div className="landing-eyebrow">Chat analytics, on your machine</div>
+            <h1>Chinwag</h1>
+            <p className="landing-tagline">See the shape of your conversations — messages, rhythms and sentiment, all from a single chat export.</p>
+          </div>
+
+          {!pending && (
+            <>
+              <div className="landing-cta">
+                <button className="primary primary-lg" onClick={pickFile}>Open chat export…</button>
+                <div className="landing-hint">Supports WhatsApp <code>.txt</code> and <code>.zip</code> exports</div>
+              </div>
+
+              <div className="landing-trust">
+                <div className="trust-item">
+                  <div className="trust-glyph" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                  </div>
+                  <div className="trust-title">Private by design</div>
+                  <div className="trust-desc">Your chats never leave this device.</div>
+                </div>
+                <div className="trust-item">
+                  <div className="trust-glyph" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+                  </div>
+                  <div className="trust-title">Runs locally</div>
+                  <div className="trust-desc">All parsing and analysis happen offline.</div>
+                </div>
+                <div className="trust-item">
+                  <div className="trust-glyph" aria-hidden>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </div>
+                  <div className="trust-title">No accounts</div>
+                  <div className="trust-desc">Nothing to sign up for, nothing tracked.</div>
+                </div>
+              </div>
+            </>
+          )}
+
           {pending && (
             <PickerCard
               pending={pending}
