@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/seanmcn/chinwag/internal/lexicon"
 	"github.com/seanmcn/chinwag/internal/parser"
 )
 
@@ -40,9 +41,24 @@ type UserStats struct {
 	AvgResponse   int64 // seconds
 	MedianResp    int64 // seconds (p50)
 	P90Response   int64 // seconds (p90)
-	Positive      int   // sentiment-positive messages
-	Negative      int   // sentiment-negative messages
+	Positive      int   // sentiment-positive messages (VADER compound >= 0.05)
+	Negative      int   // sentiment-negative messages (VADER compound <= -0.05)
 	SentimentAvg  float64
+	// VADER compound average across this user's messages, in [-1, +1].
+	CompoundAvg float64
+	// Per-NRC-category counts (indexed by lexicon.EmotionCategories order:
+	// anger, anticipation, disgust, fear, joy, sadness, surprise, trust,
+	// negative, positive).
+	Emotion [10]int
+	// Summed NRC affect-intensity per category.
+	IntensitySum [10]float64
+	// Single peak intensity score across all messages (max of summed
+	// intensities for any single message).
+	IntensityPeak float64
+	// Average VAD vector across messages that contained any VAD-known word.
+	VAD          [3]float64
+	VADMessages  int // denominator for VAD averaging
+	ScoredMsgs   int // denominator for CompoundAvg
 	PeakHour      int    // hour of day with most messages
 	Chronotype    string // "Early bird" / "Daytime" / "Night owl"
 	TopTerms      []string
@@ -119,6 +135,7 @@ type Stats struct {
 // Run computes all stats. participants[0] is "me", [1] is the other.
 func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 	var s Stats
+	lex, _ := lexicon.Load() // best-effort; nil-safe in scoring
 	if me == "" || them == "" {
 		// auto-detect top 2 authors
 		counts := map[string]int{}
@@ -198,13 +215,34 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 			sp = &SentimentPoint{Month: mk}
 			sentMap[mk] = sp
 		}
-		switch scoreSentiment(m.Body) {
+		// Sentiment + emotion (VADER + NRC)
+		score := ScoreMessage(m.Body, lex)
+		us.CompoundAvg += score.Vader.Compound
+		us.ScoredMsgs++
+		switch score.Vader.Label() {
 		case 1:
 			us.Positive++
 			sp.Pos++
 		case -1:
 			us.Negative++
 			sp.Neg++
+		}
+		// NRC emotion / intensity / VAD
+		var msgIntensity float64
+		for i := 0; i < 10; i++ {
+			us.Emotion[i] += int(score.Emotion[i])
+			us.IntensitySum[i] += score.Intensity[i]
+			msgIntensity += score.Intensity[i]
+		}
+		if msgIntensity > us.IntensityPeak {
+			us.IntensityPeak = msgIntensity
+		}
+		if score.VADWords > 0 {
+			inv := 1.0 / float64(score.VADWords)
+			us.VAD[0] += score.VAD[0] * inv
+			us.VAD[1] += score.VAD[1] * inv
+			us.VAD[2] += score.VAD[2] * inv
+			us.VADMessages++
 		}
 		// Emoji
 		for _, r := range m.Body {
@@ -316,6 +354,17 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 		// Sentiment average
 		if s.PerUser[u].Messages > 0 {
 			s.PerUser[u].SentimentAvg = float64(s.PerUser[u].Positive-s.PerUser[u].Negative) / float64(s.PerUser[u].Messages)
+		}
+		// VADER compound average + VAD averages
+		us := s.PerUser[u]
+		if us.ScoredMsgs > 0 {
+			us.CompoundAvg /= float64(us.ScoredMsgs)
+		}
+		if us.VADMessages > 0 {
+			inv := 1.0 / float64(us.VADMessages)
+			us.VAD[0] *= inv
+			us.VAD[1] *= inv
+			us.VAD[2] *= inv
 		}
 	}
 
@@ -443,7 +492,7 @@ func Run(msgs []parser.Message, me, them string, gap time.Duration) Stats {
 	s.TopDomains = computeTopDomains(msgs)
 
 	// Topic / distinctive term extraction
-	perTerms, overallTerms := computeTopTerms(msgs, me, them)
+	perTerms, overallTerms := computeTopTerms(msgs, me, them, lex)
 	s.TopTerms = overallTerms
 	for u, terms := range perTerms {
 		if us, ok := s.PerUser[u]; ok {
