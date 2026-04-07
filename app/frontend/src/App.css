@@ -128,12 +128,18 @@ body{
 .streak-lbl{font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:.3px}
 
 /* ── Top emojis row ──────────────────────────────────── */
-.emoji-block{margin-bottom:14px}
-.emoji-head{font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
-.emoji-row{display:flex;align-items:center;gap:14px;margin:10px 0;flex-wrap:wrap}
-.emoji-row .who{color:var(--muted);font-size:13px;min-width:80px}
-.emj{font-size:24px;display:inline-flex;align-items:center;gap:6px;line-height:1}
-.emj b{color:var(--muted);font-weight:600;font-size:13px;font-family:'JetBrains Mono',monospace}
+.emoji-block{margin-bottom:18px}
+.emoji-block:last-child{margin-bottom:0}
+.emoji-who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;letter-spacing:.2px}
+.emoji-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.emoji-tile{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:12px 6px;border-radius:10px;
+  background:linear-gradient(180deg,#ffffff0c,#ffffff03);
+  border:1px solid var(--chip-bd);
+}
+.emoji-glyph{font-size:28px;line-height:1}
+.emoji-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);font-weight:600}
 
 /* ── Heatmap caption ─────────────────────────────────── */
 .times-foot{font-size:14px;color:var(--muted);margin-top:8px}

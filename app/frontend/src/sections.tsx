@@ -177,16 +177,23 @@ function TopEmojisCard({ stats }: { stats: S }) {
   const [me, them] = stats.Participants;
   const a = stats.PerUser[me], b = stats.PerUser[them];
   if (!a || !b) return null;
+  const block = (name: string, who: 'me' | 'them', list: { Emoji: string; Count: number }[] | null) => (
+    <div className="emoji-block">
+      <div className="emoji-who"><Avatar name={name} who={who} sm /> {name}</div>
+      <div className="emoji-grid">
+        {(list ?? []).slice(0, 5).map((e, i) => (
+          <div key={i} className="emoji-tile">
+            <div className="emoji-glyph">{e.Emoji}</div>
+            <div className="emoji-count">{comma(e.Count)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   return (
     <Card icon="🥇" title="Top emojis" sub="each side's most-used reactions">
-      <div className="emoji-row">
-        <Avatar name={me} who="me" sm /><span className="who">{me}</span>
-        {(a.TopEmojis ?? []).map((e, i) => <span key={i} className="emj">{e.Emoji} <b>{comma(e.Count)}</b></span>)}
-      </div>
-      <div className="emoji-row">
-        <Avatar name={them} who="them" sm /><span className="who">{them}</span>
-        {(b.TopEmojis ?? []).map((e, i) => <span key={i} className="emj">{e.Emoji} <b>{comma(e.Count)}</b></span>)}
-      </div>
+      {block(me, 'me', a.TopEmojis)}
+      {block(them, 'them', b.TopEmojis)}
     </Card>
   );
 }
