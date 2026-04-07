@@ -58,6 +58,15 @@ cd app && wails dev
 go test ./...
 ```
 
+**Docker (CLI)** — the repo ships a `Dockerfile` for the CLI. The README
+points users at the prebuilt `ghcr.io/seanmcn/chinwag` image; to build and
+run it locally:
+
+```sh
+docker build -t chinwag .
+docker run --rm -v "$PWD/data:/data" chinwag /data/chat.zip
+```
+
 ## Project layout
 
 ```

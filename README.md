@@ -2,38 +2,31 @@
 
 A native desktop app (macOS / Windows) that turns a WhatsApp chat export into
 a dashboard about your relationship with one other person — message volume,
-response rhythm, top emojis, conversation flow, sentiment, and a few cheeky
-observations. A small CLI is also included for terminal/scripted use.
+response rhythm, top emojis, conversation flow, sentiment, emotion and a few
+cheeky observations. You can export the results as high-quality JPEGs to
+share. A small CLI is also included for terminal use.
 
-Everything runs locally. Your chats never leave your machine.
+**Everything runs locally. Your chats never leave your machine.**
 
-## Desktop app
+## Install
 
-Grab the latest release from the [Releases page](https://github.com/seanmcn/chinwag/releases):
+Grab the latest build from the [Releases page](https://github.com/seanmcn/chinwag/releases):
 
-- **macOS**: `chinwag-macos.zip` (universal binary)
-- **Windows**: `chinwag-windows.zip`
+- **macOS** — `chinwag-macos.zip` (universal, signed & notarised — opens like any other Mac app)
+- **Windows** — `chinwag-windows.zip` (unsigned; on first launch SmartScreen says *"Windows protected your PC"* → **More info → Run anyway**)
+- **CLI** — `go install github.com/seanmcn/chinwag/cmd/chinwag@latest`, or use the Docker image (see below)
 
-macOS builds are signed and notarised, so they open like any other Mac app.
-Windows builds are unsigned for now — on first launch SmartScreen will say
-*"Windows protected your PC"*; click **More info → Run anyway**. After that
-Windows remembers and won't ask again.
+## Use it
 
-Once open, click **Open chat export…**, pick your `.txt` or `.zip` export,
-choose which person is "you", and hit **Analyse**.
+1. In WhatsApp open a chat → ⋯ menu → **Export chat** → *Without media*. You get a `.txt` (or a `.zip` containing one). Both work.
+2. Open Chinwag, click **Open chat export…**, pick the file, choose which person is *you*, hit **Analyse**.
+3. Browse the **Overview**, **Conversation**, **Tone** and **Activity** tabs.
+4. Use the **Export** tab to save sections as JPEGs — rename participants, pick what to include, choose a single tall image or one file per section.
 
-### Get a chat export
-
-In WhatsApp, open a chat → ⋯ menu → **Export chat** → *Without media*. You'll
-get a `.txt` file (or a `.zip` containing one). Both work.
-
-## CLI
-
-For scripts, terminals, or piping into `jq`:
+### CLI
 
 ```sh
-go install github.com/seanmcn/chinwag/cmd/chinwag@latest
-chinwag --me Sean --them "Harry Young" data/chat.zip
+chinwag --me Alice --them "Bob Smith" data/chat.zip
 chinwag --format json data/chat.zip | jq .Messages
 ```
 
@@ -44,44 +37,16 @@ chinwag --format json data/chat.zip | jq .Messages
 | `--gap` | `6h` | Silence threshold for splitting conversations |
 | `--format` | `text` | `text` or `json` |
 
-A Docker image is available for the CLI:
+Or via Docker:
 
 ```sh
-docker build -t chinwag .
-docker run --rm -v "$PWD/data:/data" chinwag /data/chat.zip
+docker run --rm -v "$PWD/data:/data" ghcr.io/seanmcn/chinwag /data/chat.zip
 ```
 
-## Development
+## Contributing
 
-The repo is a Go workspace: the root module holds the parser/analyse engine
-and CLI; `app/` is the Wails desktop app.
-
-```sh
-# Run the CLI against the bundled sample
-go run ./cmd/chinwag testdata/sample_chat.txt
-
-# Run the desktop app in dev mode (requires Wails: go install github.com/wailsapp/wails/v2/cmd/wails@latest)
-cd app && wails dev
-
-# Build the desktop app
-cd app && wails build
-
-# Tests
-go test ./...
-```
-
-### Project layout
-
-```
-cmd/chinwag/   CLI entrypoint (text/JSON output)
-internal/parser/        WhatsApp export parser (iOS, Android, .zip)
-internal/analyse/       Stats, conversations, insights, rating, sentiment
-app/                    Wails desktop app (Go backend + React/TS frontend)
-app/frontend/src/       UI components, charts, format helpers
-.github/workflows/      CI and tagged release pipelines
-testdata/               Tiny sample chat for tests
-data/                   Drop your real exports here (gitignored)
-```
+Bug reports, ideas and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+for setup, project layout and dev workflow.
 
 ## License
 
