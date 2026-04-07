@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 import './App.css';
 import { OpenFileDialog, DistinctAuthors, Analyse } from '../wailsjs/go/main/App';
 import type { main } from '../wailsjs/go/models';
 type Stats = main.StatsDTO;
-import { Topbar, Overview, Chat as ChatTab, Activity } from './sections';
+import { Topbar, Overview, Conversation, Tone, Activity } from './sections';
 import { initial } from './format';
 
-type Tab = 'overview' | 'chat' | 'activity';
+type Tab = 'overview' | 'conversation' | 'tone' | 'activity';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Overview', icon: '🏠' },
-  { id: 'chat', label: 'Chat', icon: '💬' },
-  { id: 'activity', label: 'Activity', icon: '📊' },
+  { id: 'overview',     label: 'Overview',     icon: '🏠' },
+  { id: 'conversation', label: 'Conversation', icon: '💬' },
+  { id: 'tone',         label: 'Tone',         icon: '💗' },
+  { id: 'activity',     label: 'Activity',     icon: '📊' },
 ];
 
 type ChatRecord = {
@@ -233,11 +236,13 @@ function App() {
           <>
             <Topbar stats={active.stats} />
             {tab === 'overview' && <Overview stats={active.stats} />}
-            {tab === 'chat' && <ChatTab stats={active.stats} />}
+            {tab === 'conversation' && <Conversation stats={active.stats} />}
+            {tab === 'tone' && <Tone stats={active.stats} />}
             {tab === 'activity' && <Activity stats={active.stats} />}
           </>
         )}
       </main>
+      <Tooltip id="tip" className="cw-tooltip" place="top" delayShow={150} />
     </div>
   );
 }

@@ -1,20 +1,30 @@
 import { useEffect, useRef } from 'react';
 import {
   Chart,
-  LineController, BarController,
-  LineElement, BarElement, PointElement,
-  CategoryScale, LinearScale,
+  LineController, BarController, RadarController,
+  LineElement, BarElement, PointElement, ArcElement,
+  CategoryScale, LinearScale, RadialLinearScale,
   Filler, Legend, Tooltip,
 } from 'chart.js';
 import { SankeyController, Flow } from 'chartjs-chart-sankey';
-import type { main } from '../wailsjs/go/models';
+import type { main, analyse } from '../wailsjs/go/models';
 type Stats = main.StatsDTO;
+type UserStats = analyse.UserStats;
 
 Chart.register(
-  LineController, BarController, LineElement, BarElement, PointElement,
-  CategoryScale, LinearScale, Filler, Legend, Tooltip,
+  LineController, BarController, RadarController,
+  LineElement, BarElement, PointElement, ArcElement,
+  CategoryScale, LinearScale, RadialLinearScale,
+  Filler, Legend, Tooltip,
   SankeyController, Flow,
 );
+
+// NRC categories in the bit order used by internal/lexicon. Indices 8/9
+// (negative/positive) are intentionally omitted from the radar — they're
+// VADER-redundant and live on SentimentCard instead.
+export const NRC_RADAR_CATEGORIES = [
+  'anger', 'anticipation', 'disgust', 'fear', 'joy', 'sadness', 'surprise', 'trust',
+] as const;
 
 const COL_ME = '#58a6ff';
 const COL_THEM = '#3fb950';
@@ -59,6 +69,58 @@ export function GrowthChart({ stats }: { stats: Stats }) {
     return () => c.destroy();
   }, [stats]);
   return <div className="chart-box tall"><canvas ref={ref} /></div>;
+}
+
+export function EmotionRadar({ stats }: { stats: Stats }) {
+  const [me, them] = stats.Participants;
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const meU = stats.PerUser[me], themU = stats.PerUser[them];
+    if (!meU || !themU) return;
+    // Normalise to share-of-messages so two users with different volumes
+    // are visually comparable. Skip indices 8 and 9 (negative/positive).
+    const norm = (u: UserStats) => {
+      const denom = u.ScoredMsgs || 1;
+      return NRC_RADAR_CATEGORIES.map((_, i) => (u.Emotion?.[i] ?? 0) / denom);
+    };
+    const c = new Chart(ref.current, {
+      type: 'radar',
+      data: {
+        labels: NRC_RADAR_CATEGORIES.map(c => c[0].toUpperCase() + c.slice(1)),
+        datasets: [
+          { label: me, data: norm(meU), borderColor: COL_ME, backgroundColor: COL_ME + '33', pointBackgroundColor: COL_ME, borderWidth: 2 },
+          { label: them, data: norm(themU), borderColor: COL_THEM, backgroundColor: COL_THEM + '33', pointBackgroundColor: COL_THEM, borderWidth: 2 },
+        ],
+      },
+      options: {
+        responsive: true,
+        // Don't try to auto-size: the wrapper (.chart-box.radar) is already
+        // a fixed-size square and we want the canvas to fill it exactly.
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: legendLabel },
+          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.r * 100).toFixed(1)}% of msgs` } },
+        },
+        scales: {
+          r: {
+            angleLines: { color: gridColor },
+            grid: { color: gridColor },
+            pointLabels: { color: tickColor, font: { size: 13 } },
+            ticks: {
+              color: tickColor,
+              backdropColor: 'transparent',
+              showLabelBackdrop: false,
+              callback: (v: any) => `${(v * 100).toFixed(0)}%`,
+            },
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+    return () => c.destroy();
+  }, [stats]);
+  return <div className="chart-box radar"><canvas ref={ref} /></div>;
 }
 
 export function SentimentChart({ stats }: { stats: Stats }) {

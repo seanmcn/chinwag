@@ -1,6 +1,6 @@
 import type { main } from '../wailsjs/go/models';
 import { comma, commaF, fmtSec, fmtHour, initial, cmpA, cmpB, cmpAS, cmpBS } from './format';
-import { GrowthChart, SentimentChart, ReplySpeedChart, SankeyChart, Heatmap, DailyActivity } from './charts';
+import { GrowthChart, SentimentChart, ReplySpeedChart, SankeyChart, Heatmap, DailyActivity, EmotionRadar, NRC_RADAR_CATEGORIES } from './charts';
 
 type S = main.StatsDTO;
 
@@ -8,10 +8,14 @@ function Avatar({ name, who, sm }: { name: string; who: 'me' | 'them'; sm?: bool
   return <span className={`av av-${who}${sm ? ' sm' : ''}`}>{initial(name)}</span>;
 }
 
-function Card({ icon, title, sub, children, wide }: { icon?: string; title: string; sub?: string; children: any; wide?: boolean }) {
+function Card({ icon, title, sub, children, wide, help }: { icon?: string; title: string; sub?: string; children: any; wide?: boolean; help?: string }) {
   return (
     <div className={`card${wide ? ' wide' : ''}`}>
-      <h2>{icon && <span className="ico">{icon}</span>}{title}</h2>
+      <h2>
+        {icon && <span className="ico">{icon}</span>}
+        <span>{title}</span>
+        {help && <span className="help-mark" data-tooltip-id="tip" data-tooltip-content={help}>?</span>}
+      </h2>
       {sub && <div className="sub">{sub}</div>}
       {children}
     </div>
@@ -192,8 +196,10 @@ function TopEmojisCard({ stats }: { stats: S }) {
   );
   return (
     <Card icon="🥇" title="Top emojis" sub="each side's most-used reactions">
-      {block(me, 'me', a.TopEmojis)}
-      {block(them, 'them', b.TopEmojis)}
+      <div className="emoji-pair">
+        {block(me, 'me', a.TopEmojis)}
+        {block(them, 'them', b.TopEmojis)}
+      </div>
     </Card>
   );
 }
@@ -211,8 +217,6 @@ function LanguageCard({ stats }: { stats: S }) {
           <tr><td>Laughs</td><td><span className={cmpA(a.Laughs, b.Laughs)}>{comma(a.Laughs)}</span></td><td><span className={cmpB(a.Laughs, b.Laughs)}>{comma(b.Laughs)}</span></td></tr>
           <tr><td>Apologies</td><td><span className={cmpA(a.Apologies, b.Apologies)}>{comma(a.Apologies)}</span></td><td><span className={cmpB(a.Apologies, b.Apologies)}>{comma(b.Apologies)}</span></td></tr>
           <tr><td>Encouragement</td><td><span className={cmpA(a.Encouragement, b.Encouragement)}>{comma(a.Encouragement)}</span></td><td><span className={cmpB(a.Encouragement, b.Encouragement)}>{comma(b.Encouragement)}</span></td></tr>
-          <tr><td>Upbeat msgs</td><td><span className={cmpA(a.Positive, b.Positive)}>{comma(a.Positive)}</span></td><td><span className={cmpB(a.Positive, b.Positive)}>{comma(b.Positive)}</span></td></tr>
-          <tr><td>Downbeat msgs</td><td><span className={cmpB(a.Negative, b.Negative)}>{comma(a.Negative)}</span></td><td><span className={cmpA(a.Negative, b.Negative)}>{comma(b.Negative)}</span></td></tr>
         </tbody>
       </table>
     </Card>
@@ -285,8 +289,194 @@ function DomainsCard({ stats }: { stats: S }) {
   );
 }
 
-// (kept above: VolumeCard, LanguageCard, MediaCard, TopicsCard, DomainsCard)
-// The combined Chat export is defined after the conversation cards below.
+// ── Tone tab cards ──────────────────────────────────────────────────
+// All four read the new VADER + NRC fields populated by the analyser:
+// CompoundAvg, Emotion[10], IntensitySum[10], IntensityPeak, VAD[3].
+
+function compoundLabel(c: number): { text: string; cls: string } {
+  if (c >= 0.2) return { text: 'warm', cls: 'tone-warm' };
+  if (c >= 0.05) return { text: 'positive', cls: 'tone-pos' };
+  if (c <= -0.2) return { text: 'guarded', cls: 'tone-cold' };
+  if (c <= -0.05) return { text: 'negative', cls: 'tone-neg' };
+  return { text: 'neutral', cls: 'tone-neutral' };
+}
+
+function SentimentCard({ stats }: { stats: S }) {
+  const [me, them] = stats.Participants;
+  const a = stats.PerUser[me], b = stats.PerUser[them];
+  if (!a || !b) return null;
+  const SENT_HELP = 'Each message is scored by VADER (Valence Aware Dictionary for sEntiment Reasoning). Compound is the per-message score from −1 (very negative) to +1 (very positive), averaged across the user\'s messages. Positive / neutral / negative split uses VADER\'s standard ±0.05 cutoffs.';
+  const block = (name: string, who: 'me' | 'them', u: typeof a) => {
+    const total = u.ScoredMsgs || 1;
+    const pos = u.Positive;
+    const neg = u.Negative;
+    const neu = Math.max(0, total - pos - neg);
+    const posPct = (pos / total) * 100;
+    const neuPct = (neu / total) * 100;
+    const negPct = (neg / total) * 100;
+    const lbl = compoundLabel(u.CompoundAvg);
+    return (
+      <div className="tone-block">
+        <div className="tone-head">
+          <Avatar name={name} who={who} sm /> <span className="tone-name">{name}</span>
+          <span className={`tone-tag ${lbl.cls}`} data-tooltip-id="tip" data-tooltip-content={`Compound score ${u.CompoundAvg.toFixed(3)}`}>{lbl.text}</span>
+        </div>
+        <div className="tone-num" data-tooltip-id="tip" data-tooltip-content={`Average VADER compound score across ${comma(total)} messages`}>{u.CompoundAvg >= 0 ? '+' : ''}{u.CompoundAvg.toFixed(2)}</div>
+        <div className="bar-stack">
+          <div className="seg pos" style={{ width: `${posPct}%` }} data-tooltip-id="tip" data-tooltip-content={`${posPct.toFixed(1)}% positive — ${comma(pos)} of ${comma(total)} messages`}>{posPct >= 8 ? `${posPct.toFixed(0)}%` : ''}</div>
+          <div className="seg neu" style={{ width: `${neuPct}%` }} data-tooltip-id="tip" data-tooltip-content={`${neuPct.toFixed(1)}% neutral — ${comma(neu)} of ${comma(total)} messages`}>{neuPct >= 8 ? `${neuPct.toFixed(0)}%` : ''}</div>
+          <div className="seg neg" style={{ width: `${negPct}%` }} data-tooltip-id="tip" data-tooltip-content={`${negPct.toFixed(1)}% negative — ${comma(neg)} of ${comma(total)} messages`}>{negPct >= 8 ? `${negPct.toFixed(0)}%` : ''}</div>
+        </div>
+        <div className="tone-foot">
+          <span data-tooltip-id="tip" data-tooltip-content={`${posPct.toFixed(1)}% of ${name}'s messages`}><span className="dot pos" /> {comma(pos)} positive</span>
+          <span data-tooltip-id="tip" data-tooltip-content={`${neuPct.toFixed(1)}% of ${name}'s messages`}><span className="dot neu" /> {comma(neu)} neutral</span>
+          <span data-tooltip-id="tip" data-tooltip-content={`${negPct.toFixed(1)}% of ${name}'s messages`}><span className="dot neg" /> {comma(neg)} negative</span>
+        </div>
+      </div>
+    );
+  };
+  return (
+    <Card icon="💗" title="Sentiment" help={SENT_HELP} sub="overall warmth of each side's messages">
+      <div className="tone-grid">
+        {block(me, 'me', a)}
+        {block(them, 'them', b)}
+      </div>
+    </Card>
+  );
+}
+
+function VADCard({ stats }: { stats: S }) {
+  const [me, them] = stats.Participants;
+  const a = stats.PerUser[me], b = stats.PerUser[them];
+  if (!a || !b) return null;
+  const VAD_HELP = 'VAD = Valence, Arousal, Dominance — three psycholinguistic dimensions of word meaning. Scores come from the NRC VAD Lexicon (≈55,000 English words rated on each dimension). Each user\'s value is the average of every word in their messages, with the bar zoomed to a tight window so small differences are visible.';
+  if ((a.VADMessages ?? 0) < 20 || (b.VADMessages ?? 0) < 20) {
+    return (
+      <Card icon="🧭" title="VAD profile" help={VAD_HELP} sub="warmth, energy and control in each side's word choices">
+        <div className="tag-empty">Not enough vocabulary matches</div>
+      </Card>
+    );
+  }
+  const dims: Array<{ label: string; key: 0 | 1 | 2; hi: string; lo: string; help: string }> = [
+    { label: 'Warmth',  key: 0, hi: 'warmer',          lo: 'cooler',           help: 'Valence — how positive vs negative the words feel. Words like "joyful", "love" score high; "miserable", "hate" score low.' },
+    { label: 'Energy',  key: 1, hi: 'higher energy',   lo: 'calmer',           help: 'Arousal — how activating the words feel. Words like "ecstatic", "panic" score high; "calm", "drowsy" score low.' },
+    { label: 'Control', key: 2, hi: 'more in control', lo: 'more deferential', help: 'Dominance — how powerful vs submissive the words feel. Words like "confident", "command" score high; "afraid", "weak" score low.' },
+  ];
+  return (
+    <Card icon="🧭" title="VAD profile" help={VAD_HELP} sub="warmth, energy and control in each side's word choices">
+      <div className="vad-list">
+        {dims.map(d => {
+          const av = a.VAD?.[d.key] ?? 0.5;
+          const bv = b.VAD?.[d.key] ?? 0.5;
+          const diff = av - bv;
+          // Real VAD averages cluster tightly around 0.5, so a 0–1 axis
+          // hides any meaningful gap. Auto-zoom to a window around the
+          // two values with at least ±0.05 padding so the bar always has
+          // visible breathing room and isn't all-or-nothing.
+          const lo = Math.max(0, Math.min(av, bv) - 0.05);
+          const hi = Math.min(1, Math.max(av, bv) + 0.05);
+          const span = Math.max(0.01, hi - lo);
+          const aPct = ((av - lo) / span) * 100;
+          const bPct = ((bv - lo) / span) * 100;
+          let note: string;
+          let leader: 'me' | 'them' | 'even';
+          if (Math.abs(diff) < 0.005) { note = 'about even'; leader = 'even'; }
+          else if (diff > 0) { note = `${me} ${d.hi}`; leader = 'me'; }
+          else { note = `${them} ${d.hi}`; leader = 'them'; }
+          return (
+            <div key={d.key} className="vad-row">
+              <div className="vad-row-head">
+                <div className="vad-label">
+                  {d.label}
+                  <span className="help-mark sm" data-tooltip-id="tip" data-tooltip-content={d.help}>?</span>
+                </div>
+                <div className="vad-note">{note}</div>
+              </div>
+              <div className="vad-values">
+                <span className={`vad-num me${leader === 'me' ? ' lead' : ''}`} data-tooltip-id="tip" data-tooltip-content={`${me}: ${av.toFixed(3)}`}>{av.toFixed(3)}</span>
+                <div className="vad-bar" data-tooltip-id="tip" data-tooltip-content={`${d.label}: ${me} ${av.toFixed(3)} vs ${them} ${bv.toFixed(3)}`}>
+                  <span className="vad-axis" />
+                  <span className="vad-marker me" style={{ left: `${aPct}%` }} data-tooltip-id="tip" data-tooltip-content={`${me}: ${av.toFixed(3)}`} />
+                  <span className="vad-marker them" style={{ left: `${bPct}%` }} data-tooltip-id="tip" data-tooltip-content={`${them}: ${bv.toFixed(3)}`} />
+                </div>
+                <span className={`vad-num them${leader === 'them' ? ' lead' : ''}`} data-tooltip-id="tip" data-tooltip-content={`${them}: ${bv.toFixed(3)}`}>{bv.toFixed(3)}</span>
+              </div>
+              <div className="vad-range" data-tooltip-id="tip" data-tooltip-content="The bar is zoomed to a tight window so small differences are visible. These are the actual axis bounds.">{lo.toFixed(2)}<span>zoomed</span>{hi.toFixed(2)}</div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function IntensityCard({ stats }: { stats: S }) {
+  const [me, them] = stats.Participants;
+  const a = stats.PerUser[me], b = stats.PerUser[them];
+  if (!a || !b) return null;
+  const INT_HELP = 'Each emotion-bearing word has a 0–1 intensity from the NRC Emotion Intensity Lexicon (e.g. "furious" = 0.98 anger, "annoyed" = 0.55 anger). Per-message intensity is summed per category, then averaged over all the user\'s messages. Peak moment is the single highest sum across any one message.';
+  // Top 3 emotion intensities per user, normalised by ScoredMsgs.
+  const top = (u: typeof a) => {
+    const denom = u.ScoredMsgs || 1;
+    const ranked = NRC_RADAR_CATEGORIES.map((cat, i) => ({
+      cat,
+      val: (u.IntensitySum?.[i] ?? 0) / denom,
+    })).sort((x, y) => y.val - x.val).slice(0, 3);
+    const max = ranked[0]?.val || 1;
+    return { ranked, max };
+  };
+  const block = (name: string, who: 'me' | 'them', u: typeof a) => {
+    const { ranked, max } = top(u);
+    return (
+      <div className="intensity-block">
+        <div className="intensity-head"><Avatar name={name} who={who} sm /> {name}</div>
+        {ranked.map(r => (
+          <div key={r.cat} className="intensity-row" data-tooltip-id="tip" data-tooltip-content={`${r.cat}: average intensity ${r.val.toFixed(3)} per message`}>
+            <div className="intensity-cat">{r.cat}</div>
+            <div className="intensity-bar">
+              <div className={`intensity-fill who-${who}`} style={{ width: `${(r.val / max) * 100}%` }} />
+            </div>
+            <div className="intensity-val">{r.val.toFixed(3)}</div>
+          </div>
+        ))}
+        <div className="intensity-peak" data-tooltip-id="tip" data-tooltip-content={`Single highest summed intensity across any one of ${name}'s messages`}>
+          peak moment <b>{u.IntensityPeak.toFixed(1)}</b>
+        </div>
+      </div>
+    );
+  };
+  return (
+    <Card icon="🔥" title="Emotional intensity" help={INT_HELP} sub="strongest feelings each side expresses">
+      <div className="tone-stack">
+        {block(me, 'me', a)}
+        {block(them, 'them', b)}
+      </div>
+    </Card>
+  );
+}
+
+// ── Tone tab ─────────────────────────────────────────────────────────
+export function Tone({ stats }: { stats: S }) {
+  return (
+    <>
+      <div className="grid">
+        <div style={{ gridColumn: '1 / -1' }}><SentimentCard stats={stats} /></div>
+        <VADCard stats={stats} />
+        <IntensityCard stats={stats} />
+        <LanguageCard stats={stats} />
+      </div>
+      <div className="grid grid-2">
+        <TopEmojisCard stats={stats} />
+        <Card icon="🎭" title="Emotion mix" sub="share of messages carrying each Plutchik emotion (NRC EmoLex)">
+          <EmotionRadar stats={stats} />
+        </Card>
+      </div>
+      <Card icon="💗" title="Sentiment over time" wide sub="net upbeat-vs-downbeat tone, monthly"><SentimentChart stats={stats} /></Card>
+    </>
+  );
+}
+
+// (Conversation tab below — was the old "Chat" tab, minus tone content.)
 
 // ── Activity ────────────────────────────────────────────────────────
 export function Activity({ stats }: { stats: S }) {
@@ -346,25 +536,22 @@ function ConvoAnalysisCard({ stats }: { stats: S }) {
   );
 }
 
-// ── Combined Chat tab ───────────────────────────────────────────────
-// One scrollable page that covers everything about the conversation
-// itself: what was said, how it flowed, and how each side replies.
-export function Chat({ stats }: { stats: S }) {
+// ── Conversation tab ────────────────────────────────────────────────
+// Mechanics of the conversation itself: volume, media, response times,
+// flow. Tone / language affect lives on the Tone tab instead.
+export function Conversation({ stats }: { stats: S }) {
   return (
     <>
       <div className="grid">
         <VolumeCard stats={stats} />
-        <LanguageCard stats={stats} />
-        <TopEmojisCard stats={stats} />
         <MediaCard stats={stats} />
         <ResponseTimesCard stats={stats} />
         <ConvoAnalysisCard stats={stats} />
+        <TopicsCard stats={stats} />
+        <DomainsCard stats={stats} />
       </div>
       <Card icon="⏱️" title="Reply speed by hour" wide sub="average reply latency by hour-of-day"><ReplySpeedChart stats={stats} /></Card>
       <Card icon="🔀" title="Conversation flow" wide sub="how chats start, unfold and taper off"><SankeyChart stats={stats} /></Card>
-      <Card icon="💗" title="Sentiment over time" wide sub="net upbeat-vs-downbeat tone, monthly"><SentimentChart stats={stats} /></Card>
-      <TopicsCard stats={stats} />
-      <DomainsCard stats={stats} />
     </>
   );
 }

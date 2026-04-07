@@ -159,6 +159,13 @@ export namespace analyse {
 	    Positive: number;
 	    Negative: number;
 	    SentimentAvg: number;
+	    CompoundAvg: number;
+	    Emotion: number[];
+	    IntensitySum: number[];
+	    IntensityPeak: number;
+	    VAD: number[];
+	    VADMessages: number;
+	    ScoredMsgs: number;
 	    PeakHour: number;
 	    Chronotype: string;
 	    TopTerms: string[];
@@ -201,6 +208,13 @@ export namespace analyse {
 	        this.Positive = source["Positive"];
 	        this.Negative = source["Negative"];
 	        this.SentimentAvg = source["SentimentAvg"];
+	        this.CompoundAvg = source["CompoundAvg"];
+	        this.Emotion = source["Emotion"];
+	        this.IntensitySum = source["IntensitySum"];
+	        this.IntensityPeak = source["IntensityPeak"];
+	        this.VAD = source["VAD"];
+	        this.VADMessages = source["VADMessages"];
+	        this.ScoredMsgs = source["ScoredMsgs"];
 	        this.PeakHour = source["PeakHour"];
 	        this.Chronotype = source["Chronotype"];
 	        this.TopTerms = source["TopTerms"];
