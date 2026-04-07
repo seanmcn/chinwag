@@ -488,6 +488,7 @@ export function Activity({ stats }: { stats: S }) {
         <div className="times-foot">{stats.TopWeekdayHr}</div>
         <div className="times-foot tiny">Characters typed: <b>{comma(stats.CharsTyped)}</b> · Time typing: <b>{stats.TimeTyping}</b></div>
       </Card>
+      <Card icon="⏱️" title="Reply speed by hour" wide sub="average reply latency by hour-of-day"><ReplySpeedChart stats={stats} /></Card>
       <Card icon="📅" title="Daily chat activity" wide sub="last 500 days, GitHub-style"><DailyActivity stats={stats} /></Card>
     </>
   );
@@ -550,7 +551,6 @@ export function Conversation({ stats }: { stats: S }) {
         <TopicsCard stats={stats} />
         <DomainsCard stats={stats} />
       </div>
-      <Card icon="⏱️" title="Reply speed by hour" wide sub="average reply latency by hour-of-day"><ReplySpeedChart stats={stats} /></Card>
       <Card icon="🔀" title="Conversation flow" wide sub="how chats start, unfold and taper off"><SankeyChart stats={stats} /></Card>
     </>
   );
