@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { OpenFileDialog, DistinctAuthors, Analyse } from '../wailsjs/go/main/App';
 import type { main } from '../wailsjs/go/models';
@@ -22,6 +22,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('overview');
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); }, [tab]);
 
   async function pickFile() {
     setError('');
@@ -96,7 +98,7 @@ function App() {
           </div>
         </div>
       </aside>
-      <main className="main">
+      <main className="main" ref={mainRef}>
         <Topbar stats={stats} />
         {tab === 'overview' && <Overview stats={stats} />}
         {tab === 'chat' && <Chat stats={stats} />}
