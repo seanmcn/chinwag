@@ -5,16 +5,17 @@ import './App.css';
 import { OpenFileDialog, DistinctAuthors, Analyse } from '../wailsjs/go/main/App';
 import type { main } from '../wailsjs/go/models';
 type Stats = main.StatsDTO;
-import { Topbar, Overview, Conversation, Tone, Activity } from './sections';
+import { Topbar, Overview, Conversation, Tone, Activity, Export } from './sections';
 import { initial } from './format';
 
-type Tab = 'overview' | 'conversation' | 'tone' | 'activity';
+type Tab = 'overview' | 'conversation' | 'tone' | 'activity' | 'export';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview',     label: 'Overview',     icon: '🏠' },
   { id: 'conversation', label: 'Conversation', icon: '💬' },
   { id: 'tone',         label: 'Tone',         icon: '💗' },
   { id: 'activity',     label: 'Activity',     icon: '📊' },
+  { id: 'export',       label: 'Export',       icon: '📤' },
 ];
 
 type ChatRecord = {
@@ -239,6 +240,7 @@ function App() {
             {tab === 'conversation' && <Conversation stats={active.stats} />}
             {tab === 'tone' && <Tone stats={active.stats} />}
             {tab === 'activity' && <Activity stats={active.stats} />}
+            {tab === 'export' && <Export stats={active.stats} />}
           </>
         )}
       </main>

@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/seanmcn/chinwag/internal/analyse"
@@ -31,6 +34,40 @@ func (a *App) OpenFileDialog() (string, error) {
 			{DisplayName: "All files", Pattern: "*.*"},
 		},
 	})
+}
+
+// SaveJpeg shows a native save dialog seeded with defaultName and writes
+// the given base64-encoded JPEG bytes to the chosen path. Returns the
+// chosen path, or "" if the user cancelled.
+func (a *App) SaveJpeg(defaultName string, b64 string) (string, error) {
+	if i := strings.Index(b64, ","); i >= 0 && strings.HasPrefix(b64, "data:") {
+		b64 = b64[i+1:]
+	}
+	data, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return "", fmt.Errorf("decode jpeg: %w", err)
+	}
+	if !strings.HasSuffix(strings.ToLower(defaultName), ".jpg") &&
+		!strings.HasSuffix(strings.ToLower(defaultName), ".jpeg") {
+		defaultName += ".jpg"
+	}
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Save export",
+		DefaultFilename: defaultName,
+		Filters: []runtime.FileFilter{
+			{DisplayName: "JPEG image (*.jpg)", Pattern: "*.jpg;*.jpeg"},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 // DistinctAuthors parses the file and returns the unique non-system author

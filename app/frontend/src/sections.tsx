@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { main } from '../wailsjs/go/models';
 import { comma, commaF, fmtSec, fmtHour, initial, cmpA, cmpB, cmpAS, cmpBS } from './format';
 import { GrowthChart, SentimentChart, ReplySpeedChart, SankeyChart, Heatmap, DailyActivity, EmotionRadar, NRC_RADAR_CATEGORIES } from './charts';
+import { exportTabs, renderAndExport, sanitiseFilename, type ExportTabKey } from './exporter';
 
 type S = main.StatsDTO;
 
@@ -595,5 +597,292 @@ export function Conversation({ stats }: { stats: S }) {
       </div>
       <Card icon="🔀" title="Conversation flow" wide sub="how chats start, unfold and taper off"><SankeyChart stats={stats} /></Card>
     </>
+  );
+}
+
+// ── Export tab ──────────────────────────────────────────────────────
+const EXPORT_TABS: { key: ExportTabKey; label: string; icon: string }[] = [
+  { key: 'overview',     label: 'Overview',     icon: '🏠' },
+  { key: 'conversation', label: 'Conversation', icon: '💬' },
+  { key: 'tone',         label: 'Tone',         icon: '💗' },
+  { key: 'activity',     label: 'Activity',     icon: '📊' },
+];
+
+function defaultAlias(me: string, them: string, key: ExportTabKey): string {
+  return sanitiseFilename(`${me}-and-${them}-${key}`);
+}
+
+type ExportMode = 'separate' | 'combined';
+
+// Build a stats clone with the two participants renamed. All map keys
+// (PerUser, Balance, BalancePct, Direction, SentimentTimeline.netByAuthor)
+// are remapped from the original names to the new ones.
+function renameStats(stats: S, newMe: string, newThem: string): S {
+  const [oldMe, oldThem] = stats.Participants;
+  if (newMe === oldMe && newThem === oldThem) return stats;
+  const remap = (k: string) => (k === oldMe ? newMe : k === oldThem ? newThem : k);
+  const remapMap = <V,>(m: Record<string, V> | undefined): Record<string, V> => {
+    const out: Record<string, V> = {};
+    for (const k of Object.keys(m ?? {})) out[remap(k)] = (m as any)[k];
+    return out;
+  };
+  const sentiment = (stats.SentimentTimeline ?? []).map(p => ({
+    ...p,
+    netByAuthor: remapMap<number>(p.netByAuthor as any),
+  })) as any;
+  return {
+    ...stats,
+    Participants: [newMe, newThem],
+    PerUser: remapMap(stats.PerUser as any),
+    Balance: remapMap(stats.Balance as any),
+    BalancePct: remapMap(stats.BalancePct as any),
+    Direction: remapMap(stats.Direction as any),
+    SentimentTimeline: sentiment,
+  } as S;
+}
+
+const STEPS = ['Names', 'Sections', 'Output', 'Export'] as const;
+type StepIdx = 0 | 1 | 2 | 3;
+
+export function Export({ stats }: { stats: S }) {
+  const [origMe, origThem] = stats.Participants;
+
+  // Step state
+  const [step, setStep] = useState<StepIdx>(0);
+  const [aliasMe, setAliasMe] = useState(origMe);
+  const [aliasThem, setAliasThem] = useState(origThem);
+  const [enabled, setEnabled] = useState<Record<ExportTabKey, boolean>>({
+    overview: true, conversation: true, tone: true, activity: true,
+  });
+  const [includeHeader, setIncludeHeader] = useState(true);
+  const [mode, setMode] = useState<ExportMode>('combined');
+  const [perTabAlias, setPerTabAlias] = useState<Record<ExportTabKey, string>>(() => ({
+    overview:     defaultAlias(origMe, origThem, 'overview'),
+    conversation: defaultAlias(origMe, origThem, 'conversation'),
+    tone:         defaultAlias(origMe, origThem, 'tone'),
+    activity:     defaultAlias(origMe, origThem, 'activity'),
+  }));
+  const [combinedAlias, setCombinedAlias] = useState(() => sanitiseFilename(`${origMe}-and-${origThem}-export`));
+
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string>('');
+  const [error, setError] = useState<string>('');
+
+  const enabledTabs = EXPORT_TABS.filter(t => enabled[t.key]);
+  const namesValid = aliasMe.trim() !== '' && aliasThem.trim() !== '' && aliasMe.trim() !== aliasThem.trim();
+  const sectionsValid = enabledTabs.length > 0;
+  const filenamesValid = mode === 'combined'
+    ? combinedAlias.trim() !== ''
+    : enabledTabs.every(t => perTabAlias[t.key].trim() !== '');
+  const canNext: Record<StepIdx, boolean> = { 0: namesValid, 1: sectionsValid, 2: filenamesValid, 3: true };
+
+  function bodyFor(s: S, key: ExportTabKey) {
+    switch (key) {
+      case 'overview':     return <Overview stats={s} />;
+      case 'conversation': return <Conversation stats={s} />;
+      case 'tone':         return <Tone stats={s} />;
+      case 'activity':     return <Activity stats={s} />;
+    }
+  }
+
+  async function runExport() {
+    setBusy(true); setStatus(''); setError('');
+    try {
+      const renamed = renameStats(stats, aliasMe.trim(), aliasThem.trim());
+      let saved: string[] = [];
+      if (mode === 'separate') {
+        const jobs = enabledTabs.map(t => ({
+          key: t.key,
+          alias: perTabAlias[t.key],
+          element: (
+            <>
+              {includeHeader && <Topbar stats={renamed} />}
+              {bodyFor(renamed, t.key)}
+            </>
+          ),
+        }));
+        saved = await exportTabs(jobs, key => setStatus(`Exporting ${key}…`));
+      } else {
+        setStatus('Rendering…');
+        const combined = (
+          <>
+            {includeHeader && <Topbar stats={renamed} />}
+            {enabledTabs.map(t => (
+              <div key={t.key} style={{ marginTop: 18 }}>
+                {bodyFor(renamed, t.key)}
+              </div>
+            ))}
+          </>
+        );
+        const path = await renderAndExport(combined, combinedAlias);
+        if (path) saved = [path];
+      }
+      if (saved.length === 0) {
+        setStatus('Cancelled.');
+      } else {
+        const dir = saved[0].replace(/[\\/][^\\/]*$/, '');
+        setStatus(`Saved ${saved.length} ${saved.length === 1 ? 'image' : 'images'} to ${dir}`);
+      }
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+      setStatus('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // When names change, refresh default filenames (only if user hasn't customised away from previous default).
+  function applyNames() {
+    const me = aliasMe.trim(), them = aliasThem.trim();
+    setPerTabAlias(prev => {
+      const next = { ...prev };
+      for (const t of EXPORT_TABS) {
+        // Replace if it still matches the previous default for any prior name pair (heuristic: starts with old name).
+        next[t.key] = defaultAlias(me, them, t.key);
+      }
+      return next;
+    });
+    setCombinedAlias(sanitiseFilename(`${me}-and-${them}-export`));
+  }
+
+  function goNext() {
+    if (step === 0) applyNames();
+    setStep(s => Math.min(3, (s + 1)) as StepIdx);
+  }
+  function goBack() { setStep(s => Math.max(0, (s - 1)) as StepIdx); }
+
+  return (
+    <div className="export-wizard">
+      <div className="wizard-steps">
+        {STEPS.map((label, i) => (
+          <div key={label} className={`wizard-step${i === step ? ' active' : ''}${i < step ? ' done' : ''}`}>
+            <span className="wizard-step-num">{i < step ? '✓' : i + 1}</span>
+            <span className="wizard-step-label">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="wizard-body">
+        {step === 0 && (
+          <div className="wizard-pane">
+            <h3>Rename participants</h3>
+            <p className="wizard-help">These names appear throughout the exported images. Defaults to the chat's real names.</p>
+            <div className="wizard-fields">
+              <label className="wizard-field">
+                <span className="wizard-field-label">You</span>
+                <input type="text" value={aliasMe} onChange={e => setAliasMe(e.target.value)} placeholder={origMe} />
+              </label>
+              <label className="wizard-field">
+                <span className="wizard-field-label">Them</span>
+                <input type="text" value={aliasThem} onChange={e => setAliasThem(e.target.value)} placeholder={origThem} />
+              </label>
+            </div>
+            {!namesValid && (aliasMe || aliasThem) && (
+              <div className="wizard-warn">Both names must be set and different.</div>
+            )}
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="wizard-pane">
+            <h3>What to include</h3>
+            <p className="wizard-help">Pick which sections appear in the export.</p>
+            <div className="wizard-tab-grid">
+              {EXPORT_TABS.map(t => (
+                <label key={t.key} className={`wizard-tab-card${enabled[t.key] ? ' on' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={enabled[t.key]}
+                    onChange={e => setEnabled(prev => ({ ...prev, [t.key]: e.target.checked }))}
+                  />
+                  <span className="wizard-tab-ico">{t.icon}</span>
+                  <span className="wizard-tab-label">{t.label}</span>
+                </label>
+              ))}
+            </div>
+            <label className="wizard-toggle">
+              <input type="checkbox" checked={includeHeader} onChange={e => setIncludeHeader(e.target.checked)} />
+              <span>Include summary header (chat points, messages, longest streak…)</span>
+            </label>
+            {!sectionsValid && <div className="wizard-warn">Pick at least one section.</div>}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="wizard-pane">
+            <h3>Output format</h3>
+            <p className="wizard-help">A single tall image is best for sharing. Separate images give you one file per section.</p>
+            <div className="wizard-mode-grid">
+              <label className={`wizard-mode-card${mode === 'combined' ? ' on' : ''}`}>
+                <input type="radio" name="exp-mode" checked={mode === 'combined'} onChange={() => setMode('combined')} />
+                <div className="wizard-mode-title">📜 Single image</div>
+                <div className="wizard-mode-desc">All selected sections stacked into one tall JPEG. Header (if on) appears once at the top.</div>
+              </label>
+              <label className={`wizard-mode-card${mode === 'separate' ? ' on' : ''}`}>
+                <input type="radio" name="exp-mode" checked={mode === 'separate'} onChange={() => setMode('separate')} />
+                <div className="wizard-mode-title">🗂 Separate images</div>
+                <div className="wizard-mode-desc">One JPEG per section. Header (if on) is repeated on each.</div>
+              </label>
+            </div>
+
+            <div className="wizard-filenames">
+              {mode === 'combined' ? (
+                <label className="wizard-field">
+                  <span className="wizard-field-label">Filename</span>
+                  <div className="export-alias">
+                    <input type="text" value={combinedAlias} onChange={e => setCombinedAlias(e.target.value)} />
+                    <span className="export-suffix">.jpg</span>
+                  </div>
+                </label>
+              ) : (
+                <div className="wizard-fields-list">
+                  {enabledTabs.map(t => (
+                    <label key={t.key} className="wizard-field">
+                      <span className="wizard-field-label">{t.icon} {t.label}</span>
+                      <div className="export-alias">
+                        <input
+                          type="text"
+                          value={perTabAlias[t.key]}
+                          onChange={e => setPerTabAlias(prev => ({ ...prev, [t.key]: e.target.value }))}
+                        />
+                        <span className="export-suffix">.jpg</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {!filenamesValid && <div className="wizard-warn">Filenames cannot be empty.</div>}
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="wizard-pane">
+            <h3>Ready to export</h3>
+            <ul className="wizard-summary">
+              <li><strong>You</strong> → {aliasMe}</li>
+              <li><strong>Them</strong> → {aliasThem}</li>
+              <li><strong>Sections</strong> → {enabledTabs.map(t => t.label).join(', ')}</li>
+              <li><strong>Header</strong> → {includeHeader ? 'included' : 'hidden'}</li>
+              <li><strong>Output</strong> → {mode === 'combined' ? `single image (${combinedAlias}.jpg)` : `${enabledTabs.length} separate images`}</li>
+            </ul>
+            <div className="wizard-actions-row">
+              <button className="primary" disabled={busy} onClick={runExport}>
+                {busy ? 'Exporting…' : 'Export'}
+              </button>
+              {status && <span className="export-status">{status}</span>}
+            </div>
+            {error && <div className="error">{error}</div>}
+          </div>
+        )}
+      </div>
+
+      <div className="wizard-nav">
+        <button className="ghost" disabled={step === 0 || busy} onClick={goBack}>← Back</button>
+        {step < 3 && (
+          <button className="primary" disabled={!canNext[step] || busy} onClick={goNext}>Next →</button>
+        )}
+      </div>
+    </div>
   );
 }

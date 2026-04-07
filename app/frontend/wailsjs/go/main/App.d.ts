@@ -7,3 +7,5 @@ export function Analyse(arg1:string,arg2:string,arg3:string,arg4:number):Promise
 export function DistinctAuthors(arg1:string):Promise<Array<string>>;
 
 export function OpenFileDialog():Promise<string>;
+
+export function SaveJpeg(arg1:string,arg2:string):Promise<string>;

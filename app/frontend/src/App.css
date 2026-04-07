@@ -122,6 +122,53 @@ body{
 
 .main{padding:18px;overflow-y:auto}
 
+/* ── Export wizard ───────────────────────────────────── */
+.export-wizard{max-width:780px;margin:0 auto;background:var(--card);border:1px solid var(--card-bd);border-radius:14px;padding:28px 32px;box-shadow:0 1px 0 #ffffff06 inset,0 10px 30px #0003}
+.wizard-steps{display:flex;align-items:center;gap:0;margin-bottom:28px;border-bottom:1px solid var(--card-bd);padding-bottom:18px}
+.wizard-step{display:flex;align-items:center;gap:10px;flex:1;color:var(--muted);font-size:13px;position:relative}
+.wizard-step:not(:last-child)::after{content:'';flex:1;height:1px;background:var(--card-bd);margin-left:10px}
+.wizard-step-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#ffffff0a;border:1px solid var(--card-bd);font-size:12px;font-weight:700;flex-shrink:0}
+.wizard-step.active{color:var(--ink)}
+.wizard-step.active .wizard-step-num{background:#58a6ff20;border-color:#58a6ff66;color:#9ec8ff}
+.wizard-step.done .wizard-step-num{background:#4ade8020;border-color:#4ade8066;color:#86efac}
+.wizard-step-label{font-weight:500}
+.wizard-body{min-height:280px}
+.wizard-pane h3{margin:0 0 6px;font-size:18px}
+.wizard-help{margin:0 0 18px;color:var(--muted);font-size:13px}
+.wizard-warn{margin-top:14px;color:#fca5a5;font-size:12px}
+.wizard-fields{display:flex;gap:14px;flex-wrap:wrap}
+.wizard-fields-list{display:flex;flex-direction:column;gap:12px}
+.wizard-field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px}
+.wizard-field-label{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.wizard-field>input[type=text]{background:#ffffff08;border:1px solid var(--card-bd);border-radius:8px;padding:10px 12px;color:var(--ink);font-size:14px;outline:none}
+.wizard-field>input[type=text]:focus{border-color:#58a6ff66}
+.wizard-tab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
+.wizard-tab-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--card-bd);border-radius:10px;background:#ffffff05;cursor:pointer;transition:border-color .15s,background .15s}
+.wizard-tab-card:hover{background:#ffffff0a}
+.wizard-tab-card.on{border-color:#58a6ff66;background:#58a6ff14}
+.wizard-tab-card input{cursor:pointer}
+.wizard-tab-ico{font-size:18px}
+.wizard-tab-label{font-weight:500}
+.wizard-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;padding-top:14px;border-top:1px solid var(--card-bd)}
+.wizard-toggle input{cursor:pointer}
+.wizard-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.wizard-mode-card{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid var(--card-bd);border-radius:10px;background:#ffffff05;cursor:pointer;transition:border-color .15s,background .15s}
+.wizard-mode-card:hover{background:#ffffff0a}
+.wizard-mode-card.on{border-color:#58a6ff66;background:#58a6ff14}
+.wizard-mode-card input{position:absolute;opacity:0;pointer-events:none}
+.wizard-mode-title{font-weight:600;font-size:14px}
+.wizard-mode-desc{color:var(--muted);font-size:12px;line-height:1.45}
+.wizard-filenames{margin-top:6px}
+.wizard-summary{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:8px}
+.wizard-summary li{padding:10px 14px;background:#ffffff05;border:1px solid var(--card-bd);border-radius:8px;font-size:14px}
+.wizard-summary strong{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:11px;letter-spacing:.6px;margin-right:8px}
+.wizard-actions-row{display:flex;align-items:center;gap:14px}
+.wizard-nav{display:flex;justify-content:space-between;margin-top:24px;padding-top:18px;border-top:1px solid var(--card-bd)}
+.export-alias{display:flex;align-items:center;gap:6px;background:#ffffff08;border:1px solid var(--card-bd);border-radius:8px;padding:0 12px}
+.export-alias input{flex:1;background:transparent;border:0;outline:none;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px 0}
+.export-suffix{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:13px}
+.export-status{color:var(--muted);font-size:13px}
+
 /* ── Top bar ─────────────────────────────────────────── */
 .topbar{display:grid;grid-template-columns:1fr 1fr 2.4fr 1fr 1fr;gap:12px;margin-bottom:18px}
 .pill{

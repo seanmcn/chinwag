@@ -13,3 +13,7 @@ export function DistinctAuthors(arg1) {
 export function OpenFileDialog() {
   return window['go']['main']['App']['OpenFileDialog']();
 }
+
+export function SaveJpeg(arg1, arg2) {
+  return window['go']['main']['App']['SaveJpeg'](arg1, arg2);
+}
