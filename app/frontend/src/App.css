@@ -34,14 +34,28 @@ body{
   border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;
 }
 .ghost:hover{background:#ffffff08}
-.picker{margin-top:22px;display:flex;flex-direction:column;gap:12px}
-.picker-path{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.picker-row{display:flex;gap:12px;justify-content:center}
-.picker-row label,.who-row label{display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.picker-row select,.who-row select{
-  background:#0e1116;color:var(--ink);border:1px solid var(--card-bd);
-  border-radius:8px;padding:7px 10px;min-width:160px;font-family:inherit;font-size:13px;
+.picker{margin-top:22px;display:flex;flex-direction:column;gap:14px}
+.picker-path{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-pills{display:flex;align-items:center;justify-content:center;gap:10px}
+.who-pill{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  padding:10px 16px;border-radius:10px;min-width:140px;
+  background:#58a6ff14;border:1px solid #58a6ff45;
 }
+.who-pill.them{background:#3fb95014;border-color:#3fb95045}
+.who-label{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.who-name{font-size:15px;font-weight:600;color:var(--ink)}
+.swap{
+  background:#ffffff0a;border:1px solid var(--card-bd);color:var(--ink);
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  font-size:18px;display:inline-flex;align-items:center;justify-content:center;
+  transition:background .12s;
+}
+.swap:hover:not(:disabled){background:#ffffff14}
+.swap:disabled{opacity:.5;cursor:not-allowed}
+.who-pills.compact{gap:6px}
+.who-pills.compact .who-pill{min-width:0;flex:1;padding:8px 12px}
+.who-pills.compact .who-name{font-size:13px}
 .error{margin-top:14px;padding:10px 12px;border-radius:8px;background:#f8514920;border:1px solid #f8514955;color:#ffb4ad;font-size:12px}
 
 /* ── App shell ───────────────────────────────────────── */

@@ -65,9 +65,10 @@ function App() {
           {path && (
             <div className="picker">
               <div className="picker-path" title={path}>{path.split(/[\\/]/).pop()}</div>
-              <div className="picker-row">
-                <label>You<select value={me} onChange={e => setMe(e.target.value)}>{authors.map(a => <option key={a}>{a}</option>)}</select></label>
-                <label>Them<select value={them} onChange={e => setThem(e.target.value)}>{authors.map(a => <option key={a}>{a}</option>)}</select></label>
+              <div className="who-pills">
+                <div className="who-pill"><span className="who-label">You</span><span className="who-name">{me || '—'}</span></div>
+                <button className="swap" title="Swap you / them" onClick={() => { const m = me; setMe(them); setThem(m); }}>⇄</button>
+                <div className="who-pill them"><span className="who-label">Them</span><span className="who-name">{them || '—'}</span></div>
               </div>
               <button className="primary" disabled={busy || !me || !them || me === them} onClick={run}>{busy ? 'Analysing…' : 'Analyse'}</button>
             </div>
@@ -90,12 +91,13 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <button className="ghost" onClick={() => { setStats(null); setPath(''); setAuthors([]); }}>Open another…</button>
-          <button className="ghost" disabled={busy} onClick={run}>Swap perspective</button>
-          <div className="who-row">
-            <label>You<select value={me} onChange={e => setMe(e.target.value)}>{authors.map(a => <option key={a}>{a}</option>)}</select></label>
-            <label>Them<select value={them} onChange={e => setThem(e.target.value)}>{authors.map(a => <option key={a}>{a}</option>)}</select></label>
+          <div className="who-pills compact">
+            <div className="who-pill"><span className="who-label">You</span><span className="who-name">{me}</span></div>
+            <button className="swap" title="Swap you / them" disabled={busy}
+              onClick={async () => { const m = me, t = them; setMe(t); setThem(m); setBusy(true); try { setStats(await Analyse(path, t, m, 6)); } finally { setBusy(false); } }}>⇄</button>
+            <div className="who-pill them"><span className="who-label">Them</span><span className="who-name">{them}</span></div>
           </div>
+          <button className="ghost" onClick={() => { setStats(null); setPath(''); setAuthors([]); }}>Open another…</button>
         </div>
       </aside>
       <main className="main" ref={mainRef}>
