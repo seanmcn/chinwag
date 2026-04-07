@@ -47,6 +47,65 @@ func buildInsights(per map[string]*UserStats, me, them string, s Stats) []string
 		addCmp(a.Negative, b.Negative, "You vent more often than your contact.", "Your contact vents more often than you.", "")
 	}
 
+	// Emotion mix (NRC). Indices: 0 anger, 1 anticipation, 2 disgust, 3 fear,
+	// 4 joy, 5 sadness, 6 surprise, 7 trust, 8 negative, 9 positive.
+	addCmp(a.Emotion[4], b.Emotion[4],
+		"Your messages skew more toward joy than your contact's.",
+		"Your contact's messages skew more toward joy than yours.", "")
+	addCmp(a.Emotion[0], b.Emotion[0],
+		"You express anger more often than your contact.",
+		"Your contact expresses anger more often than you.", "")
+	addCmp(a.Emotion[7], b.Emotion[7],
+		"You express trust more often than your contact.",
+		"Your contact expresses trust more often than you.", "")
+	addCmp(a.Emotion[3], b.Emotion[3],
+		"You voice fear or worry more than your contact.",
+		"Your contact voices fear or worry more than you.", "")
+	addCmp(a.Emotion[1], b.Emotion[1],
+		"You look forward to things more than your contact.",
+		"Your contact looks forward to things more than you.", "")
+
+	// Joy vs anger ratio — internal tilt rather than person-vs-person.
+	if a.Emotion[4]+a.Emotion[0] > 20 {
+		ratio := float64(a.Emotion[4]+1) / float64(a.Emotion[0]+1)
+		switch {
+		case ratio > 2.0:
+			out = append(out, "Your chats lean strongly toward joy over anger.")
+		case ratio < 0.5:
+			out = append(out, "Your chats lean toward anger over joy.")
+		}
+	}
+
+	// Intensity peaks
+	if a.IntensityPeak > b.IntensityPeak*1.3 {
+		out = append(out, "You hit higher emotional peaks than your contact.")
+	} else if b.IntensityPeak > a.IntensityPeak*1.3 {
+		out = append(out, "Your contact hits higher emotional peaks than you.")
+	}
+
+	// VAD: arousal (energy) and dominance (control)
+	if a.VADMessages > 5 && b.VADMessages > 5 {
+		if a.VAD[1] > b.VAD[1]+0.05 {
+			out = append(out, "You bring more energy to the chat than your contact.")
+		} else if b.VAD[1] > a.VAD[1]+0.05 {
+			out = append(out, "Your contact brings more energy to the chat than you.")
+		}
+		if a.VAD[2] > b.VAD[2]+0.05 {
+			out = append(out, "You sound more in control than your contact.")
+		} else if b.VAD[2] > a.VAD[2]+0.05 {
+			out = append(out, "Your contact sounds more in control than you.")
+		}
+	}
+
+	// VADER compound: overall tone
+	if a.ScoredMsgs > 20 && b.ScoredMsgs > 20 {
+		if a.CompoundAvg > b.CompoundAvg+0.1 {
+			out = append(out, "Your overall tone reads warmer than your contact's.")
+		} else if b.CompoundAvg > a.CompoundAvg+0.1 {
+			out = append(out, "Your contact's overall tone reads warmer than yours.")
+		}
+	}
+
 	// Latency spread (p90 vs avg) — flag bursty repliers
 	if a.P90Response > 0 && a.AvgResponse > 0 && a.P90Response > 6*a.AvgResponse {
 		out = append(out, "Your reply times are bursty — usually fast, occasionally very slow.")
