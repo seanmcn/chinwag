@@ -117,7 +117,7 @@ type Stats struct {
 	Heatmap       [7][24]int
 	DailyActivity []DayCount
 	Convos        ConvoStats
-	Insights      []string
+	Insights      []Insight
 	Rating        int
 	RatingLabel   string
 	Balance       map[string]int

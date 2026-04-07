@@ -108,6 +108,26 @@ export namespace analyse {
 	        this.counts = source["counts"];
 	    }
 	}
+	export class Insight {
+	    Category: string;
+	    Icon: string;
+	    Title: string;
+	    Detail: string;
+	    Tone: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Insight(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Category = source["Category"];
+	        this.Icon = source["Icon"];
+	        this.Title = source["Title"];
+	        this.Detail = source["Detail"];
+	        this.Tone = source["Tone"];
+	    }
+	}
 	
 	export class SentimentPoint {
 	    month: string;
@@ -271,7 +291,7 @@ export namespace main {
 	    Heatmap: number[][];
 	    DailyActivity: analyse.DayCount[];
 	    Convos: analyse.ConvoStats;
-	    Insights: string[];
+	    Insights: analyse.Insight[];
 	    Rating: number;
 	    RatingLabel: string;
 	    Balance: Record<string, number>;
@@ -302,7 +322,7 @@ export namespace main {
 	        this.Heatmap = source["Heatmap"];
 	        this.DailyActivity = this.convertValues(source["DailyActivity"], analyse.DayCount);
 	        this.Convos = this.convertValues(source["Convos"], analyse.ConvoStats);
-	        this.Insights = source["Insights"];
+	        this.Insights = this.convertValues(source["Insights"], analyse.Insight);
 	        this.Rating = source["Rating"];
 	        this.RatingLabel = source["RatingLabel"];
 	        this.Balance = source["Balance"];

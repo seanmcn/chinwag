@@ -70,7 +70,7 @@ type StatsDTO struct {
 	Heatmap           [7][24]int                   `json:"Heatmap"`
 	DailyActivity     []analyse.DayCount           `json:"DailyActivity"`
 	Convos            analyse.ConvoStats           `json:"Convos"`
-	Insights          []string                     `json:"Insights"`
+	Insights          []analyse.Insight            `json:"Insights"`
 	Rating            int                          `json:"Rating"`
 	RatingLabel       string                       `json:"RatingLabel"`
 	Balance           map[string]int               `json:"Balance"`

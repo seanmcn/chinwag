@@ -127,14 +127,54 @@ function StreaksCard({ stats }: { stats: S }) {
   );
 }
 
+const INSIGHT_GROUP_ORDER = ['initiative', 'balance', 'tone', 'energy', 'rhythm'] as const;
+const INSIGHT_GROUP_LABEL: Record<string, string> = {
+  initiative: 'Initiative',
+  balance: 'Balance',
+  tone: 'Tone',
+  energy: 'Energy',
+  rhythm: 'Rhythm & streaks',
+};
+
 function InsightsCard({ stats }: { stats: S }) {
+  const insights = stats.Insights ?? [];
+  if (insights.length === 0) {
+    return (
+      <Card icon="🧠" title="Key insights">
+        <div className="sub">Not enough signal yet.</div>
+      </Card>
+    );
+  }
+  const groups = new Map<string, typeof insights>();
+  for (const ins of insights) {
+    const key = ins.Category || 'other';
+    if (!groups.has(key)) groups.set(key, [] as any);
+    (groups.get(key) as any).push(ins);
+  }
+  const ordered = [
+    ...INSIGHT_GROUP_ORDER.filter(k => groups.has(k)),
+    ...[...groups.keys()].filter(k => !INSIGHT_GROUP_ORDER.includes(k as any)),
+  ];
   return (
     <Card icon="🧠" title="Key insights">
-      <ul className="insights">
-        {(stats.Insights ?? []).map((line, i) => (
-          <li key={i}><span className="dot" /> {line}</li>
+      <div className="insight-groups">
+        {ordered.map(key => (
+          <div className="insight-group" key={key}>
+            <div className="insight-group-head">{INSIGHT_GROUP_LABEL[key] ?? key}</div>
+            <div className="insight-grid">
+              {(groups.get(key) ?? []).map((ins, i) => (
+                <div className={`insight-tile tone-${ins.Tone || 'info'}`} key={i}>
+                  <span className="insight-icon">{ins.Icon}</span>
+                  <div className="insight-body">
+                    <div className="insight-title">{ins.Title}</div>
+                    {ins.Detail && <div className="insight-detail">{ins.Detail}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </Card>
   );
 }

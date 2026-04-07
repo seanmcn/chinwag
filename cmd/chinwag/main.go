@@ -91,7 +91,7 @@ func printText(s analyse.Stats) {
 	if len(s.Insights) > 0 {
 		fmt.Println("Insights:")
 		for _, ins := range s.Insights {
-			fmt.Printf("  • %s\n", ins)
+			fmt.Printf("  • %s — %s\n", ins.Title, ins.Detail)
 		}
 	}
 }
