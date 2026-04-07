@@ -8,4 +8,8 @@ export function DistinctAuthors(arg1:string):Promise<Array<string>>;
 
 export function OpenFileDialog():Promise<string>;
 
+export function PickDirectory(arg1:string):Promise<string>;
+
 export function SaveJpeg(arg1:string,arg2:string):Promise<string>;
+
+export function SaveJpegTo(arg1:string,arg2:string,arg3:string):Promise<string>;

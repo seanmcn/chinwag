@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { main } from '../wailsjs/go/models';
 import { comma, commaF, fmtSec, fmtHour, initial, cmpA, cmpB, cmpAS, cmpBS } from './format';
 import { GrowthChart, SentimentChart, ReplySpeedChart, SankeyChart, Heatmap, DailyActivity, EmotionRadar, NRC_RADAR_CATEGORIES } from './charts';
-import { exportTabs, renderAndExport, sanitiseFilename, type ExportTabKey } from './exporter';
+import { exportTabs, renderAndExport, sanitiseFilename, PickDirectory, type ExportTabKey } from './exporter';
 
 type S = main.StatsDTO;
 
@@ -691,6 +691,12 @@ export function Export({ stats }: { stats: S }) {
       const renamed = renameStats(stats, aliasMe.trim(), aliasThem.trim());
       let saved: string[] = [];
       if (mode === 'separate') {
+        const dir = await PickDirectory('Choose folder to save exports');
+        if (!dir) {
+          setStatus('Cancelled.');
+          setBusy(false);
+          return;
+        }
         const jobs = enabledTabs.map(t => ({
           key: t.key,
           alias: perTabAlias[t.key],
@@ -701,7 +707,7 @@ export function Export({ stats }: { stats: S }) {
             </>
           ),
         }));
-        saved = await exportTabs(jobs, key => setStatus(`Exporting ${key}…`));
+        saved = await exportTabs(jobs, key => setStatus(`Exporting ${key}…`), dir);
       } else {
         setStatus('Rendering…');
         const combined = (

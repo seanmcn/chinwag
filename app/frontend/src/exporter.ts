@@ -1,7 +1,9 @@
 import html2canvas from 'html2canvas';
 import { createRoot, type Root } from 'react-dom/client';
 import { type ReactElement } from 'react';
-import { SaveJpeg } from '../wailsjs/go/main/App';
+import { SaveJpeg, SaveJpegTo, PickDirectory } from '../wailsjs/go/main/App';
+
+export { PickDirectory };
 
 const APP_BG = '#0e1116';
 const RENDER_WIDTH = 1280;
@@ -26,7 +28,7 @@ function nextFrame(): Promise<void> {
   return new Promise(resolve => requestAnimationFrame(() => resolve()));
 }
 
-export async function captureElementToJpeg(node: HTMLElement, alias: string): Promise<string> {
+export async function captureElementToJpeg(node: HTMLElement, alias: string, dir?: string): Promise<string> {
   const canvas = await html2canvas(node, {
     scale: 2,
     backgroundColor: APP_BG,
@@ -35,12 +37,15 @@ export async function captureElementToJpeg(node: HTMLElement, alias: string): Pr
     windowWidth: RENDER_WIDTH,
   });
   const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-  return await SaveJpeg(`${sanitiseFilename(alias)}.jpg`, dataUrl);
+  const filename = `${sanitiseFilename(alias)}.jpg`;
+  if (dir) return await SaveJpegTo(dir, filename, dataUrl);
+  return await SaveJpeg(filename, dataUrl);
 }
 
 export async function renderAndExport(
   element: ReactElement,
   alias: string,
+  dir?: string,
 ): Promise<string> {
   const host = document.createElement('div');
   host.style.position = 'fixed';
@@ -61,7 +66,7 @@ export async function renderAndExport(
     await nextFrame();
     // chart.js (esp. the Sankey on Conversation) animates for ~1s after mount.
     await new Promise(r => setTimeout(r, 1400));
-    return await captureElementToJpeg(host, alias);
+    return await captureElementToJpeg(host, alias, dir);
   } finally {
     if (root) root.unmount();
     host.remove();
@@ -71,11 +76,12 @@ export async function renderAndExport(
 export async function exportTabs(
   tabs: { key: ExportTabKey; alias: string; element: ReactElement }[],
   onProgress?: (key: ExportTabKey) => void,
+  dir?: string,
 ): Promise<string[]> {
   const saved: string[] = [];
   for (const t of tabs) {
     onProgress?.(t.key);
-    const path = await renderAndExport(t.element, t.alias);
+    const path = await renderAndExport(t.element, t.alias, dir);
     if (path) saved.push(path);
   }
   return saved;

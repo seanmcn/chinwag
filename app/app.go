@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -64,6 +65,39 @@ func (a *App) SaveJpeg(defaultName string, b64 string) (string, error) {
 	if path == "" {
 		return "", nil
 	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// PickDirectory shows a native directory picker and returns the chosen
+// path, or "" if the user cancelled.
+func (a *App) PickDirectory(title string) (string, error) {
+	if title == "" {
+		title = "Choose folder"
+	}
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: title})
+}
+
+// SaveJpegTo writes the given base64-encoded JPEG to dir/filename without
+// prompting. Returns the full path written.
+func (a *App) SaveJpegTo(dir, filename, b64 string) (string, error) {
+	if dir == "" {
+		return "", fmt.Errorf("no directory")
+	}
+	if i := strings.Index(b64, ","); i >= 0 && strings.HasPrefix(b64, "data:") {
+		b64 = b64[i+1:]
+	}
+	data, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return "", fmt.Errorf("decode jpeg: %w", err)
+	}
+	if !strings.HasSuffix(strings.ToLower(filename), ".jpg") &&
+		!strings.HasSuffix(strings.ToLower(filename), ".jpeg") {
+		filename += ".jpg"
+	}
+	path := filepath.Join(dir, filename)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return "", err
 	}

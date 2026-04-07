@@ -14,6 +14,14 @@ export function OpenFileDialog() {
   return window['go']['main']['App']['OpenFileDialog']();
 }
 
+export function PickDirectory(arg1) {
+  return window['go']['main']['App']['PickDirectory'](arg1);
+}
+
 export function SaveJpeg(arg1, arg2) {
   return window['go']['main']['App']['SaveJpeg'](arg1, arg2);
+}
+
+export function SaveJpegTo(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SaveJpegTo'](arg1, arg2, arg3);
 }
