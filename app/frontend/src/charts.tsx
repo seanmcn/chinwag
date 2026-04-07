@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Chart,
   LineController, BarController, RadarController,
@@ -59,7 +59,11 @@ export function GrowthChart({ stats }: { stats: Stats }) {
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: legendLabel } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: legendLabel },
+          tooltip: { enabled: true, mode: 'index', intersect: false },
+        },
         scales: {
           x: { ticks: { color: tickColor, maxTicksLimit: 14 }, grid: { color: gridColor } },
           y: { ticks: { color: tickColor }, grid: { color: gridColor } },
@@ -211,10 +215,27 @@ export function SankeyChart({ stats }: { stats: Stats }) {
   return <div className="chart-box tall"><canvas ref={ref} /></div>;
 }
 
+type TipState = { x: number; y: number; text: string } | null;
+
+function ChartTooltip({ tip }: { tip: TipState }) {
+  if (!tip) return null;
+  return (
+    <div className="chart-tooltip" style={{ left: tip.x, top: tip.y }}>{tip.text}</div>
+  );
+}
+
 export function Heatmap({ stats }: { stats: Stats }) {
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayLong = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const wrap = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<TipState>(null);
   let max = 1;
   for (let d = 0; d < 7; d++) for (let h = 0; h < 24; h++) if ((stats.Heatmap?.[d]?.[h] ?? 0) > max) max = stats.Heatmap[d][h];
+  const onEnter = (e: React.MouseEvent, d: number, h: number, v: number) => {
+    const r = wrap.current?.getBoundingClientRect();
+    if (!r) return;
+    setTip({ x: e.clientX - r.left + 12, y: e.clientY - r.top + 12, text: `${dayLong[d]} ${String(h).padStart(2,'0')}:00 — ${v} message${v === 1 ? '' : 's'}` });
+  };
   const cells: JSX.Element[] = [];
   cells.push(<div key="corner" />);
   for (let h = 0; h < 24; h++) {
@@ -225,33 +246,104 @@ export function Heatmap({ stats }: { stats: Stats }) {
     for (let h = 0; h < 24; h++) {
       const v = stats.Heatmap[d][h];
       const bg = v > 0 ? `rgba(255,181,71,${0.12 + 0.88 * (v / max)})` : undefined;
-      cells.push(<div key={`c${d}-${h}`} className="cell" style={bg ? { background: bg } : undefined} title={`${days[d]} ${h}:00 — ${v}`} />);
+      cells.push(
+        <div
+          key={`c${d}-${h}`}
+          className="cell"
+          style={bg ? { background: bg } : undefined}
+          onMouseEnter={(e) => onEnter(e, d, h, v)}
+          onMouseMove={(e) => onEnter(e, d, h, v)}
+          onMouseLeave={() => setTip(null)}
+        />,
+      );
     }
   }
-  return <div id="heatmap">{cells}</div>;
+  return <div id="heatmap" ref={wrap}>{cells}<ChartTooltip tip={tip} /></div>;
 }
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WEEKDAY_LONG = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 export function DailyActivity({ stats }: { stats: Stats }) {
   const days = stats.DailyActivity ?? [];
+  const wrap = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<TipState>(null);
   if (!days.length) return null;
-  const padded = [...days];
+  const padded: { date: string; count: number }[] = [...days];
   const first = new Date(padded[0].date + 'T00:00:00');
   const pad = first.getDay();
   for (let i = 0; i < pad; i++) padded.unshift({ date: '', count: -1 });
   const nz = days.map(d => d.count).filter(c => c > 0).sort((a, b) => a - b);
   const q = (i: number) => (nz.length ? nz[Math.floor(nz.length * i)] || 1 : 1);
   const t1 = q(0.25), t2 = q(0.5), t3 = q(0.85);
+  const todayIdx = padded.length - 1;
+  // Compute month label columns: first column of each month change (in column-major 7-row grid).
+  const cols = Math.ceil(padded.length / 7);
+  const monthLabels: { col: number; label: string }[] = [];
+  let lastMonth = -1;
+  for (let c = 0; c < cols; c++) {
+    // pick first real cell in this column
+    for (let r = 0; r < 7; r++) {
+      const idx = c * 7 + r;
+      if (idx >= padded.length) break;
+      const cell = padded[idx];
+      if (cell.count < 0) continue;
+      const m = new Date(cell.date + 'T00:00:00').getMonth();
+      if (m !== lastMonth) {
+        // require some space before the previous label
+        const prev = monthLabels[monthLabels.length - 1];
+        if (!prev || c - prev.col >= 3) monthLabels.push({ col: c, label: MONTH_NAMES[m] });
+        lastMonth = m;
+      }
+      break;
+    }
+  }
+  const fmtDate = (iso: string) => {
+    const dt = new Date(iso + 'T00:00:00');
+    return `${WEEKDAY_LONG[dt.getDay()]} ${dt.getDate()} ${MONTH_NAMES[dt.getMonth()]} ${dt.getFullYear()}`;
+  };
+  const onEnter = (e: React.MouseEvent, d: { date: string; count: number }) => {
+    const r = wrap.current?.getBoundingClientRect();
+    if (!r) return;
+    setTip({ x: e.clientX - r.left + 12, y: e.clientY - r.top + 12, text: `${fmtDate(d.date)} — ${d.count} message${d.count === 1 ? '' : 's'}` });
+  };
   return (
-    <div id="daily-grid">
+    <div id="daily-grid" ref={wrap}>
       <div className="inner">
-        <div className="grid-rows">
-          {padded.map((d, i) => {
-            if (d.count < 0) return <div key={i} className="gcell" />;
-            const lvl = d.count >= t3 ? 4 : d.count >= t2 ? 3 : d.count >= t1 ? 2 : d.count > 0 ? 1 : 0;
-            return <div key={i} className={`gcell${lvl ? ' l' + lvl : ''}`} title={`${d.date}: ${d.count}`} />;
-          })}
+        <div className="months" style={{ gridTemplateColumns: `repeat(${cols}, var(--gcell))` }}>
+          {monthLabels.map((m, i) => (
+            <span key={i} className="month-label" style={{ gridColumn: m.col + 1 }}>{m.label}</span>
+          ))}
+        </div>
+        <div className="body">
+          <div className="weekdays">
+            <span />
+            <span>Mon</span>
+            <span />
+            <span>Wed</span>
+            <span />
+            <span>Fri</span>
+            <span />
+          </div>
+          <div className="grid-rows">
+            {padded.map((d, i) => {
+              if (d.count < 0) return <div key={i} className="gcell empty" />;
+              const lvl = d.count >= t3 ? 4 : d.count >= t2 ? 3 : d.count >= t1 ? 2 : d.count > 0 ? 1 : 0;
+              const isToday = i === todayIdx;
+              return (
+                <div
+                  key={i}
+                  className={`gcell${lvl ? ' l' + lvl : ''}${isToday ? ' today' : ''}`}
+                  onMouseEnter={(e) => onEnter(e, d)}
+                  onMouseMove={(e) => onEnter(e, d)}
+                  onMouseLeave={() => setTip(null)}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
+      <ChartTooltip tip={tip} />
     </div>
   );
 }
