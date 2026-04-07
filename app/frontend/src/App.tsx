@@ -78,7 +78,9 @@ function App() {
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('overview');
   const mainRef = useRef<HTMLElement>(null);
-  useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); }, [tab, activeId]);
+  // Reset scroll only when changing tab — switching chats keeps the same
+  // scroll position so you can flick between exports and compare the same row.
+  useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); }, [tab]);
 
   const active = chats.find(c => c.id === activeId) ?? null;
 
