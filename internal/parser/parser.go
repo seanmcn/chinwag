@@ -32,8 +32,8 @@ type Message struct {
 	Kind      Kind
 }
 
-// iOS:     [07/12/2013, 21:14:03] Ben: hello
-// Android: 07/12/13, 21:14 - Ben: hello
+// iOS:     [07/12/2013, 21:14:03] Bob: hello
+// Android: 07/12/13, 21:14 - Bob: hello
 var (
 	reIOS     = regexp.MustCompile(`^\x{200e}?\[(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4}),\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*([APap][Mm])?\]\s+([^:]+?):\s?(.*)$`)
 	reAndroid = regexp.MustCompile(`^(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4}),\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*([APap][Mm])?\s+-\s+([^:]+?):\s?(.*)$`)
