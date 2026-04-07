@@ -4,6 +4,8 @@ data/*
 
 # Built binaries
 /chinwag
+/build_lexicons
+/app/app
 /bin/
 *.exe
 *.test
