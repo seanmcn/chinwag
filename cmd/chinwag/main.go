@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/seanmcn/whatsapp-analyse/internal/analyse"
-	"github.com/seanmcn/whatsapp-analyse/internal/parser"
+	"github.com/seanmcn/chinwag/internal/analyse"
+	"github.com/seanmcn/chinwag/internal/parser"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 
 func printText(s analyse.Stats) {
 	a, b := s.Participants[0], s.Participants[1]
-	fmt.Printf("WhatsApp Analyse — %s & %s\n", a, b)
+	fmt.Printf("Chinwag — %s & %s\n", a, b)
 	fmt.Printf("Period:        %s → %s\n", s.Period.Start.Format("2006-01-02"), s.Period.End.Format("2006-01-02"))
 	fmt.Printf("Messages:      %d\n", s.Messages)
 	fmt.Printf("Conversations: %d\n", s.Conversations)

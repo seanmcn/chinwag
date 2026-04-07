@@ -1,4 +1,4 @@
-# WhatsApp Analyse
+# Chinwag
 
 A native desktop app (macOS / Windows) that turns a WhatsApp chat export into
 a dashboard about your relationship with one other person — message volume,
@@ -9,10 +9,10 @@ Everything runs locally. Your chats never leave your machine.
 
 ## Desktop app
 
-Grab the latest release from the [Releases page](https://github.com/seanmcn/whatsapp-analyse/releases):
+Grab the latest release from the [Releases page](https://github.com/seanmcn/chinwag/releases):
 
-- **macOS**: `WhatsApp-Analyse-macOS.zip` (universal binary)
-- **Windows**: `WhatsApp-Analyse-Windows.zip`
+- **macOS**: `chinwag-macos.zip` (universal binary)
+- **Windows**: `chinwag-windows.zip`
 
 macOS builds are signed and notarised, so they open like any other Mac app.
 Windows builds are unsigned for now — on first launch SmartScreen will say
@@ -32,9 +32,9 @@ get a `.txt` file (or a `.zip` containing one). Both work.
 For scripts, terminals, or piping into `jq`:
 
 ```sh
-go install github.com/seanmcn/whatsapp-analyse/cmd/whatsapp-analyse@latest
-whatsapp-analyse --me Sean --them "Harry Young" data/chat.zip
-whatsapp-analyse --format json data/chat.zip | jq .Messages
+go install github.com/seanmcn/chinwag/cmd/chinwag@latest
+chinwag --me Sean --them "Harry Young" data/chat.zip
+chinwag --format json data/chat.zip | jq .Messages
 ```
 
 | Flag | Default | Notes |
@@ -47,8 +47,8 @@ whatsapp-analyse --format json data/chat.zip | jq .Messages
 A Docker image is available for the CLI:
 
 ```sh
-docker build -t whatsapp-analyse .
-docker run --rm -v "$PWD/data:/data" whatsapp-analyse /data/chat.zip
+docker build -t chinwag .
+docker run --rm -v "$PWD/data:/data" chinwag /data/chat.zip
 ```
 
 ## Development
@@ -58,7 +58,7 @@ and CLI; `app/` is the Wails desktop app.
 
 ```sh
 # Run the CLI against the bundled sample
-go run ./cmd/whatsapp-analyse testdata/sample_chat.txt
+go run ./cmd/chinwag testdata/sample_chat.txt
 
 # Run the desktop app in dev mode (requires Wails: go install github.com/wailsapp/wails/v2/cmd/wails@latest)
 cd app && wails dev
@@ -73,7 +73,7 @@ go test ./...
 ### Project layout
 
 ```
-cmd/whatsapp-analyse/   CLI entrypoint (text/JSON output)
+cmd/chinwag/   CLI entrypoint (text/JSON output)
 internal/parser/        WhatsApp export parser (iOS, Android, .zip)
 internal/analyse/       Stats, conversations, insights, rating, sentiment
 app/                    Wails desktop app (Go backend + React/TS frontend)

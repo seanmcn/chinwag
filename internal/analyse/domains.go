@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/seanmcn/whatsapp-analyse/internal/parser"
+	"github.com/seanmcn/chinwag/internal/parser"
 )
 
 var reURL = regexp.MustCompile(`https?://[^\s<>"']+`)

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/seanmcn/whatsapp-analyse/internal/analyse"
-	"github.com/seanmcn/whatsapp-analyse/internal/parser"
+	"github.com/seanmcn/chinwag/internal/analyse"
+	"github.com/seanmcn/chinwag/internal/parser"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 

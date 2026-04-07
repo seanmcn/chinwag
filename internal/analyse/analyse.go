@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/seanmcn/whatsapp-analyse/internal/parser"
+	"github.com/seanmcn/chinwag/internal/parser"
 )
 
 type UserStats struct {

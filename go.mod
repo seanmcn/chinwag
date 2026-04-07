@@ -1,3 +1,3 @@
-module github.com/seanmcn/whatsapp-analyse
+module github.com/seanmcn/chinwag
 
 go 1.26

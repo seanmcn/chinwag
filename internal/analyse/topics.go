@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/seanmcn/whatsapp-analyse/internal/parser"
+	"github.com/seanmcn/chinwag/internal/parser"
 )
 
 // Common chat-noise words we never want to surface as a "topic".

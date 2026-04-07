@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/seanmcn/whatsapp-analyse/internal/parser"
+	"github.com/seanmcn/chinwag/internal/parser"
 )
 
 type Conversation struct {

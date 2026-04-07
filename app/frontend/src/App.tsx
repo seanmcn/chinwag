@@ -151,7 +151,7 @@ function App() {
     return (
       <div className="landing">
         <div className="landing-card">
-          <h1>WhatsApp Analyse</h1>
+          <h1>Chinwag</h1>
           <p className="landing-sub">Open a chat export (.txt or .zip) to see stats, conversation patterns and sentiment.</p>
           <button className="primary" onClick={pickFile}>Open chat export…</button>
           {pending && (
@@ -174,7 +174,7 @@ function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="sidebar-title">WhatsApp Analyse</div>
+        <div className="sidebar-title">Chinwag</div>
 
         <div className="chatlist-head">CHATS</div>
         <div className="chatlist">

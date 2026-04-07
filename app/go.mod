@@ -1,13 +1,13 @@
-module github.com/seanmcn/whatsapp-analyse/app
+module github.com/seanmcn/chinwag/app
 
 go 1.26
 
 require (
-	github.com/seanmcn/whatsapp-analyse v0.0.0
+	github.com/seanmcn/chinwag v0.0.0
 	github.com/wailsapp/wails/v2 v2.12.0
 )
 
-replace github.com/seanmcn/whatsapp-analyse => ../
+replace github.com/seanmcn/chinwag => ../
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect

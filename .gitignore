@@ -3,7 +3,7 @@ data/*
 !data/.gitkeep
 
 # Built binaries
-/whatsapp-analyse
+/chinwag
 /bin/
 *.exe
 *.test
